@@ -1,0 +1,30 @@
+{
+  "name": "arbitrage-trading-bot",
+  "version": "1.0.0",
+  "description": "Flashloan Bot Arbitrage Finder",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bot.js"
+  },
+  "keywords": [
+    "arbitrage",
+    "bot",
+    "trading-bot",
+    "trading"
+  ],
+  "author": "supercoolx",
+  "license": "ISC",
+  "dependencies": {
+    "@shibaswap/core": "^0.0.2",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-periphery": "^1.4.1",
+    "axios": "^0.27.2",
+    "colors": "^1.4.0",
+    "console-table-printer": "^2.11.0",
+    "dotenv": "^16.0.1",
+    "web3": "^1.7.3"
+  }
+}
