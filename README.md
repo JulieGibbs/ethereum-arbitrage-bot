@@ -9,8 +9,7 @@ Flashloan Bot Arbitrage Finder
 
     Here, you need three things. 
     * Insert your INFURA Project ID. You can create a infura Project ID [here](https://infura.io). 
-    * Insert your MetaMask (Kovan Testnet) 32byt wallet private key address
-    * Insert your [etherscan](https://etherscan.io) account's API KEY
+    * Insert your MetaMask (Kovan Testnet) 32byte wallet private key.
 
 
 3. Install node modules. Open terminal window and run:
