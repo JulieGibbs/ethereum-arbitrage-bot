@@ -25,17 +25,17 @@ const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 /**
  * The network on which the bot runs.
  */
-const network = 'Kovan';
+const network = 'Mainnet';
 
 /**
  * Tokens to trade.
  */
-const token = ['DAI', 'WETH'];
+const token = ['WETH', 'DAI'];
 
 /**
  * Initial amount of token.
  */
-const initial = 2000;
+// const initial = 1;
 
 /**
  * Token price floating-point digit.
@@ -206,11 +206,11 @@ const initContract = async () => {
 /**
  * Display of trading and find arbitrage oppotunity.
  */
-const runBot = async () => {
+const runBot = async (initial) => {
     const table = new Table();
 
     let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = []/*, shAmountOut = []*/;
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0]/* = shAmountOut[0]*/ = BN(initial).times(BN(10).pow(tokenDecimal[0]));
+    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0]/* = shAmountOut[0]*/ = initial;
 
     for(let i = 0; i < token.length; i++) {
         let next = (i + 1) % token.length;
@@ -243,14 +243,29 @@ const runBot = async () => {
             // 'ShibaSwap': `${shAmountPrint} ${token[next]}`
         });
     }
-    table.printTable();
 
-    if(amountOut[0].lt(amountOut[token.length])) {
-        console.log('Arbitrage Found! Estimate profit:'.green, toPrintable(amountOut[token.length].minus(amountOut[0]), tokenDecimal[0], fixed), token[0]);
-        
+    const profit = amountOut[token.length].minus(amountOut[0]);
+    if(profit.gt(0)) {
+        console.log(
+            'Input:',
+            toPrintable(initial, tokenDecimal[0], fixed),
+            token[0],
+            '\tEstimate profit:',
+            profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).green,
+            token[0].green
+        );
     }
+    else console.log(
+        'Input:',
+        toPrintable(initial, tokenDecimal[0], fixed),
+        token[0],
+        '\tEstimate profit:',
+        profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
+        token[0].red
+    );
     console.log();
-    setTimeout(runBot, 1000);
+    
+    return [profit, table];
 }
 
 /**
@@ -258,7 +273,29 @@ const runBot = async () => {
  */
 const main = async () => {
     await initContract();
-    runBot();
+
+    const range = [0, 5];
+    var input0 = BN(range[0]).times(BN(10).pow(tokenDecimal[0]));
+    var input3 = BN(range[1]).times(BN(10).pow(tokenDecimal[0]));
+    var input1, input2;
+    
+    while(true) {
+        input1 = BN(input0.times(2).plus(input3).idiv(3));
+        input2 = BN(input3.times(2).plus(input0).idiv(3));
+        let [[output1, table1], [output2, table2]] = await Promise.all([
+            runBot(input1),
+            runBot(input2)
+        ]);
+        
+        if(output1.gt(output2)) input3 = input2;
+        if(output1.lt(output2)) input0 = input1;
+
+        if(output1.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed) === output2.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed)) {
+            if(output1.gt(output2)) table1.printTable();
+            else table2.printTable();
+        }
+        console.log('--------------------------');
+    }
 }
 
 main();
