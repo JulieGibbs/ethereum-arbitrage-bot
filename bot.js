@@ -26,7 +26,7 @@ const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 /**
  * The network on which the bot runs.
  */
-const network = 'Kovan';
+const network = 'Mainnet';
 
 /**
  * Tokens to trade.
@@ -278,10 +278,17 @@ const runBot = async (initial) => {
 const main = async () => {
     await initContract();
 
-    const range = [0, 100000];
-    var input0 = BN(range[0]).times(BN(10).pow(tokenDecimal[0]));
-    var input3 = BN(range[1]).times(BN(10).pow(tokenDecimal[0]));
-    var input1, input2;
+    var input3 = BN(1).times(BN(10).pow(tokenDecimal[0]));
+    
+    let max;
+    let output = BN(0);
+    do {
+        max = output;
+        input3 = input3.times(10);
+        [output] = await runBot(input3);
+    } while(output.gt(max))
+    
+    var input0 = BN(0), input1, input2;
     
     while(true) {
         input1 = BN(input0.times(2).plus(input3).idiv(3));
