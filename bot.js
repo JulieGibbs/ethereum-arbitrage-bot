@@ -36,11 +36,7 @@ const token = ['WETH', 'DAI'];
 /**
  * Initial amount of token.
  */
-<<<<<<< HEAD
 // const initial = 1;
-=======
-const initial = 1;
->>>>>>> main
 
 /**
  * Token price floating-point digit.
