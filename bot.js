@@ -26,12 +26,12 @@ const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 /**
  * The network on which the bot runs.
  */
-const network = 'Mainnet';
+const network = 'Kovan';
 
 /**
  * Tokens to trade.
  */
-const token = ['WETH', 'DAI'];
+const token = ['DAI', 'WETH'];
 
 /**
  * Initial amount of token.
@@ -278,7 +278,7 @@ const runBot = async (initial) => {
 const main = async () => {
     await initContract();
 
-    const range = [0, 5];
+    const range = [0, 100000];
     var input0 = BN(range[0]).times(BN(10).pow(tokenDecimal[0]));
     var input3 = BN(range[1]).times(BN(10).pow(tokenDecimal[0]));
     var input1, input2;
