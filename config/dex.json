@@ -9,7 +9,8 @@
             },
             "UniswapV3": {
                 "Router": "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
-                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+                "Quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"                
             },
             "SushiswapV2": {
                 "Router": "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
@@ -27,7 +28,8 @@
             },
             "UniswapV3": {
                 "Router": "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
-                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+                "Quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"                
             },
             "SushiswapV2": {
                 "Router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
@@ -41,7 +43,8 @@
             },
             "UniswapV3": {
                 "Router": "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
-                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+                "Quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"                
             },
             "SushiswapV2": {
                 "Router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
@@ -55,7 +58,8 @@
             },
             "UniswapV3": {
                 "Router": "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
-                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+                "Quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"                
             },
             "SushiswapV2": {
                 "Router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
@@ -73,7 +77,8 @@
             },
             "UniswapV3": {
                 "Router": "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
-                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+                "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+                "Quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"                
             },
             "SushiswapV2": {
                 "Router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",

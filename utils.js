@@ -23,7 +23,7 @@ const getAmountOut = (amountIn, reserveIn, reserveOut) => {
  * @param {Contract} pair Pair contract
  * @returns Output amount of token
  */
-const getPriceFromContract = async (amountIn, tokenIn, tokenOut, pair) => {
+const getUniswapQuote = async (amountIn, tokenIn, tokenOut, pair) => {
     // If token pair contract is null address, return infinity
     if(pair.options.address === '0x0000000000000000000000000000000000000000') return BN(-Infinity);
 
@@ -34,6 +34,23 @@ const getPriceFromContract = async (amountIn, tokenIn, tokenOut, pair) => {
     if(tokenIn > tokenOut) [reserve1, reserve2] = [reserve2, reserve1];
     
     return getAmountOut(amountIn, reserve1, reserve2);
+}
+
+/**
+ * Calculate token price.
+ * @param {BigNumber} amountIn Input amount of token
+ * @param {number} tokenId Index of token in token array
+ * @param {Contract} pair Pair contract
+ * @returns Output amount of token
+ */
+ const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
+    return await quoter.methods.quoteExactInputSingle(
+        tokenIn,
+        tokenOut,
+        3000,
+        amountIn.toFixed(),
+        '0'
+    ).call();
 }
 
 /**
@@ -86,7 +103,8 @@ const toPrintable = (amount, decimal, fixed) => {
 }
 
 module.exports = {
-    getPriceFromContract,
+    getUniswapQuote,
+    getUniswapV3Quote,
     getPriceFromApi,
     toPrintable
 }

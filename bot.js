@@ -3,7 +3,7 @@ const Web3 = require('web3');
 const colors = require('colors');
 const { Table } = require('console-table-printer');
 const BN = require('bignumber.js');
-const { getPriceFromContract, getPriceFromApi, toPrintable } = require('./utils');
+const { getUniswapQuote, getUniswapV3Quote, toPrintable } = require('./utils');
 
 const tokenAddress = require('./config/token.json');
 const dexAddress = require('./config/dex.json');
@@ -20,6 +20,7 @@ const un2IRouter = require('@uniswap/v2-periphery/build/IUniswapV2Router02.json'
 const un3IRouter = require('@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json');
 const sbIRouter = require('@shibaswap/core/build/abi/IUniswapV2Router02.json');
 
+const un3IQuoter = require('@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json');
 const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 
 /**
@@ -35,7 +36,11 @@ const token = ['WETH', 'DAI'];
 /**
  * Initial amount of token.
  */
+<<<<<<< HEAD
 // const initial = 1;
+=======
+const initial = 1;
+>>>>>>> main
 
 /**
  * Token price floating-point digit.
@@ -60,7 +65,8 @@ var tokenDecimal = [];                  // Array of decimals of tokens
 var un2Pair = [];                       // UniSwapV2 token pair contract
 var un3Pair = [];                       // UniSwapV3 token pair contract
 var suPair = [];                        // SushiSwap token pair contract
-var shPair = [];                     // ShibaSwap token pair contract
+var shPair = [];                        // ShibaSwap token pair contract
+var un3Quoter = new web3.eth.Contract(un3IQuoter.abi, dexAddress.Ethereum[network].UniswapV3.Quoter);
 
 /**
  * Print user's eth and tokens balance.
@@ -146,6 +152,7 @@ const initContract = async () => {
     token.forEach((v, i) => {
         tokenContract[i] = new web3.eth.Contract(IERC20.abi, tokenAddress[network][v]);
     });
+    
     let promises = token.map((v, i) => tokenContract[i].methods.decimals().call());
     tokenDecimal = await Promise.all(promises);
     const tokenTable = new Table({
@@ -166,6 +173,7 @@ const initContract = async () => {
     });
     tokenTable.printTable();
     console.log();
+    
     // Initialize token pair contracts.
     for(let i = 0; i < token.length; i++) {
         let next = (i + 1) % token.length;
@@ -196,6 +204,7 @@ const initContract = async () => {
         ])
         table.printTable();
     }
+    
     console.log();
     console.log('Contract is initialized.');
     console.log('-------------------------------------------------------------------------------------------------------------------');
@@ -216,11 +225,10 @@ const runBot = async (initial) => {
         let next = (i + 1) % token.length;
         
         [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]/*, shAmountOut[i + 1]*/] = await Promise.all([
-            getPriceFromContract(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Pair[i]),
-            // getPriceFromContract(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Pair[i]),
-            getPriceFromApi(tokenContract[i].options.address, tokenContract[next].options.address, amountOut[i].toFixed(), 3, network),
-            getPriceFromContract(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, suPair[i]),
-            // getPriceFromContract(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shPair[i])
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Pair[i]),
+            getUniswapV3Quote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un3Quoter),
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, suPair[i]),
+            // getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shPair[i])
         ]);
         amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]/*, shAmountOut[i + 1]*/);
         let amountIn = toPrintable(amountOut[i], tokenDecimal[i], fixed);
