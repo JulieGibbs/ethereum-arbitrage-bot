@@ -19,7 +19,8 @@ const getAmountOut = (amountIn, reserveIn, reserveOut) => {
 /**
  * Calculate token price.
  * @param {string | BigNumber} amountIn Input amount of token
- * @param {number} tokenId Index of token in token array
+ * @param {string} tokenIn Input token address
+ * @param {string} tokenOut Output token address
  * @param {Contract} pair Pair contract
  * @returns Output amount of token
  */
@@ -38,9 +39,10 @@ const getUniswapQuote = async (amountIn, tokenIn, tokenOut, pair) => {
 
 /**
  * Calculate token price.
- * @param {BigNumber} amountIn Input amount of token
- * @param {number} tokenId Index of token in token array
- * @param {Contract} pair Pair contract
+ * @param {string | BigNumber} amountIn Input amount of token
+ * @param {string} tokenIn Input token address
+ * @param {string} tokenOut Output token address
+ * @param {Contract} quoter Quoter contract
  * @returns Output amount of token
  */
  const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
@@ -94,6 +96,7 @@ const getPriceFromApi = async (tokenIn, tokenOut, amountIn, version, network) =>
  * 
  * @param {string | BigNumber} amount Amount of token
  * @param {number} decimal Decimal of token
+ * @param {number} fixed Fixed count
  * @returns Returns printable amount of token.
  */
 const toPrintable = (amount, decimal, fixed) => {
