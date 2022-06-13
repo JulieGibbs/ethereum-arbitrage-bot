@@ -46,13 +46,18 @@ const getUniswapQuote = async (amountIn, tokenIn, tokenOut, pair) => {
  * @returns Output amount of token
  */
  const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
-    return await quoter.methods.quoteExactInputSingle(
-        tokenIn,
-        tokenOut,
-        3000,
-        amountIn.toFixed(),
-        '0'
-    ).call();
+    try{
+        return await quoter.methods.quoteExactInputSingle(
+            tokenIn,
+            tokenOut,
+            3000,
+            amountIn.toFixed(),
+            '0'
+        ).call();
+    }
+    catch(err) {
+        return BN(-Infinity);
+    }
 }
 
 /**
