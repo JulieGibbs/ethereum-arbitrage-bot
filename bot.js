@@ -110,7 +110,7 @@ const callFlashSwap = async (loanToken, loanAmount, tradePath, dexPath) => {
     const tx = {
         from: account,
         to: flashSwapContract.options.address,
-        gas: 1000000,
+        gas: 2000000,
         data: init.encodeABI()
     };
     const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY);
@@ -208,7 +208,7 @@ const runBot = async () => {
     let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = []/*, shAmountOut = []*/;
     amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0]/* = shAmountOut[0]*/ = BN(initial).times(BN(10).pow(tokenDecimal[0]));
 
-    const [a, b] = BN(loanFee).toFractino();
+    const [a, b] = BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
 
     for(let i = 0; i < token.length; i++) {
