@@ -40,6 +40,11 @@ const token = ['WETH', 'DAI'];
 const initial = 1;
 
 /**
+ * Flashloan fee.
+ */
+const loanFee = 0.0005;
+
+/**
  * Token price floating-point digit.
  */
 const fixed = 4;
@@ -202,6 +207,9 @@ const runBot = async () => {
 
     let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = []/*, shAmountOut = []*/;
     amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0]/* = shAmountOut[0]*/ = BN(initial).times(BN(10).pow(tokenDecimal[0]));
+
+    const [a, b] = BN(loanFee).toFractino();
+    const feeAmount = amountOut[0].times(a).idiv(b);
 
     for(let i = 0; i < token.length; i++) {
         let next = (i + 1) % token.length;
