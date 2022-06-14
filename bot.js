@@ -27,7 +27,7 @@ const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 /**
  * The network on which the bot runs.
  */
-const network = 'Mainnet';
+const network = 'Kovan';
 
 /**
  * Tokens to trade.
@@ -265,17 +265,12 @@ const runBot = async (initial) => {
         profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
         token[0].red
     );
-    console.log();
     
-    return [profit, table];
+    return [profit, table, dexPath, tokenPath];
 }
 
-/**
- * Bot start here.
- */
-const main = async () => {
-    await initContract();
-
+const trade = async () => {
+    console.log('Start Trade ==============================================');
     var input3 = BN(1).times(BN(10).pow(tokenDecimal[0]));
     
     let max;
@@ -291,7 +286,10 @@ const main = async () => {
     while(true) {
         input1 = BN(input0.times(2).plus(input3).idiv(3));
         input2 = BN(input3.times(2).plus(input0).idiv(3));
-        let [[output1, table1], [output2, table2]] = await Promise.all([
+        let [
+            [output1, table1, dexPath1, tokenPath1],
+            [output2, table2, dexPath2, tokenPath2]
+        ] = await Promise.all([
             runBot(input1),
             runBot(input2)
         ]);
@@ -299,12 +297,31 @@ const main = async () => {
         if(output1.gt(output2)) input3 = input2;
         if(output1.lt(output2)) input0 = input1;
 
-        if(output1.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed) === output2.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed)) {
-            if(output1.gt(output2)) table1.printTable();
-            else table2.printTable();
+        if(output1.minus(output2).abs().lt(BN(10).pow(tokenDecimal[0] - 2))) {
+            if(output1.gt(0) || output2.gt(0)) {
+                if(output1.gt(output2)) {
+                    table1.printTable();
+                    await callFlashSwap(tokenContract[0].options.address, input1, tokenPath1, dexPath1);
+                }
+                else {
+                    table2.printTable();
+                    await callFlashSwap(tokenContract[0].options.address, input2, tokenPath2, dexPath2);
+                }
+                await printAccountBalance();
+            }
+            break;
         }
         console.log('--------------------------');
     }
+    await trade();
+}
+
+/**
+ * Bot start here.
+ */
+const main = async () => {
+    await initContract();
+    await trade();    
 }
 
 main();
