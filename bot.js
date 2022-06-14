@@ -271,7 +271,7 @@ const runBot = async (initial) => {
 
 const trade = async () => {
     console.log('Start Trade ==============================================');
-    var input3 = BN(1).times(BN(10).pow(tokenDecimal[0]));
+    var input3 = BN(0.1).times(BN(10).pow(tokenDecimal[0]));
     
     let max;
     let output = BN(0);
