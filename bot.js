@@ -208,7 +208,7 @@ const runBot = async (initial) => {
     let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = []/*, shAmountOut = []*/;
     amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0]/* = shAmountOut[0]*/ = initial;
 
-    const [a, b] = BN(loanFee).toFractino();
+    const [a, b] = BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
 
     for(let i = 0; i < token.length; i++) {
@@ -254,24 +254,16 @@ const runBot = async (initial) => {
         });
     }
 
-    const profit = amountOut[token.length].minus(amountOut[0]);
-    if(profit.gt(0)) {
-        console.log(
-            'Input:',
-            toPrintable(initial, tokenDecimal[0], fixed),
-            token[0],
-            '\tEstimate profit:',
-            profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).green,
-            token[0].green
-        );
-    }
-    else console.log(
+    const profit = amountOut[token.length].minus(amountOut[0]).minus(feeAmount);
+    console.log(
         'Input:',
         toPrintable(initial, tokenDecimal[0], fixed),
         token[0],
         '\tEstimate profit:',
-        profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
-        token[0].red
+        profit.gt(0) ?
+            profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).green :
+            profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
+        token[0]
     );
     
     return [profit, table, dexPath, tokenPath];
