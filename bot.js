@@ -110,7 +110,7 @@ const callFlashSwap = async (loanToken, loanAmount, tradePath, dexPath) => {
     const tx = {
         from: account,
         to: flashSwapContract.options.address,
-        gas: 1000000,
+        gas: 2000000,
         data: init.encodeABI()
     };
     const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY);
