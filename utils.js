@@ -45,7 +45,7 @@ const getUniswapQuote = async (amountIn, tokenIn, tokenOut, pair) => {
  * @param {Contract} quoter Quoter contract
  * @returns Output amount of token
  */
- const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
+const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
     try{
         return await quoter.methods.quoteExactInputSingle(
             tokenIn,
@@ -98,7 +98,7 @@ const getPriceFromApi = async (tokenIn, tokenOut, amountIn, version, network) =>
 }
 
 /**
- * 
+ * Change big number to fixed.
  * @param {string | BigNumber} amount Amount of token
  * @param {number} decimal Decimal of token
  * @param {number} fixed Fixed count

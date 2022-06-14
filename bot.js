@@ -6,7 +6,8 @@ const BN = require('bignumber.js');
 const { getUniswapQuote, getUniswapV3Quote, toPrintable } = require('./utils');
 
 const tokenAddress = require('./config/token.json');
-const dexAddress = require('./config/dex.json');
+const DEX = require('./config/dex.json');
+const IContract = require('./config/UniswapFlash.json');
 
 const un2IFactory = require('@uniswap/v2-core/build/IUniswapV2Factory.json');
 const un3IFactory = require('@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json');
@@ -45,16 +46,17 @@ const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY).address;
+const flashSwapContract = new web3.eth.Contract(IContract.abi, process.env.CONTRACT_ADDRESS);
 
-const un2Factory = new web3.eth.Contract(un2IFactory.abi, dexAddress.Ethereum[network].UniswapV2.Factory);      //UniSwapV2 factory contract
-const un3Factory = new web3.eth.Contract(un3IFactory.abi, dexAddress.Ethereum[network].UniswapV3.Factory);      //UniSwapV3 factory contract
-const suFactory = new web3.eth.Contract(un2IFactory.abi, dexAddress.Ethereum[network].SushiswapV2.Factory);     //SushiSwap factory contract
-// const shFactory = new web3.eth.Contract(sbIFactory, dexAddress.Ethereum[network].ShibaswapV2.Factory);       //ShibaSwap factory contract
+const un2Factory = new web3.eth.Contract(un2IFactory.abi, DEX[network].UniswapV2.Factory);      //UniSwapV2 factory contract
+const un3Factory = new web3.eth.Contract(un3IFactory.abi, DEX[network].UniswapV3.Factory);      //UniSwapV3 factory contract
+const suFactory = new web3.eth.Contract(un2IFactory.abi, DEX[network].SushiswapV2.Factory);     //SushiSwap factory contract
+// const shFactory = new web3.eth.Contract(sbIFactory, DEX[network].ShibaswapV2.Factory);       //ShibaSwap factory contract
 
-const un2Router = new web3.eth.Contract(un2IRouter.abi, dexAddress.Ethereum[network].UniswapV2.Router);
-const un3Router = new web3.eth.Contract(un3IRouter.abi, dexAddress.Ethereum[network].UniswapV3.Router);
-const suRouter = new web3.eth.Contract(un2IRouter.abi, dexAddress.Ethereum[network].SushiswapV2.Router);
-// const sbRouter = new web3.eth.Contract(sbIRouter, dexAddress.Ethereum[network].ShibaswapV2.Router);
+const un2Router = new web3.eth.Contract(un2IRouter.abi, DEX[network].UniswapV2.Router);
+const un3Router = new web3.eth.Contract(un3IRouter.abi, DEX[network].UniswapV3.Router);
+const suRouter = new web3.eth.Contract(un2IRouter.abi, DEX[network].SushiswapV2.Router);
+// const sbRouter = new web3.eth.Contract(sbIRouter, DEX[network].ShibaswapV2.Router);
 
 var tokenContract = [];                 // Array of contracts of tokens
 var tokenDecimal = [];                  // Array of decimals of tokens
@@ -62,7 +64,7 @@ var un2Pair = [];                       // UniSwapV2 token pair contract
 var un3Pair = [];                       // UniSwapV3 token pair contract
 var suPair = [];                        // SushiSwap token pair contract
 var shPair = [];                        // ShibaSwap token pair contract
-var un3Quoter = new web3.eth.Contract(un3IQuoter.abi, dexAddress.Ethereum[network].UniswapV3.Quoter);
+var un3Quoter = new web3.eth.Contract(un3IQuoter.abi, DEX[network].UniswapV3.Quoter);
 
 /**
  * Print user's eth and tokens balance.
@@ -86,53 +88,34 @@ const printAccountBalance = async () => {
 }
 
 /**
- * Swap token to other token on dex.
- * @param {number} tokenInId Input token id
- * @param {BigNumber} amountIn Input amount of token
- * @param {number} tokenOutId Output token id
- * @param {BigNumber} amountOut Estimate output amount of token
- * @param {Contract} router Router contract of dex
+ * Call the contract and perform flashswap.
+ * @param {string} loanToken Address of token to flashloan
+ * @param {BigNumber} loanAmount Flashloan amount
+ * @param {Array<string>} tradePath Swap path of token
+ * @param {Array<number>} dexPath Swap path of dex
  */
-const swap = async (tokenInId, amountIn, tokenOutId, amountOut, router) => {
-    // let dex;
-    // if(router === un2Router) dex = 'UniswapV2';
-    // if(router === suRouter) dex = 'Sushiswap';
-    // let tokenIn = toPrintable(amountIn, tokenDecimal[tokenInId], 4);
-    // let tokenOut = toPrintable(amountOut, tokenDecimal[tokenOutId], 4);
-    // console.log(`${tokenIn} ${token[tokenInId]} -> ${tokenOut} ${token[tokenOutId]} on ${dex}`);
-    // return;
-
-    let timestamp = Math.floor(Date.now() / 1000) + 60 * 120;
-    let swap = router.methods.swapExactTokensForTokens(
-        amountIn.toFixed(),
-        amountOut.toFixed(),
-        [tokenContract[tokenInId].options.address, tokenContract[tokenOutId].options.address],
-        account,
-        timestamp
+const callFlashSwap = async (loanToken, loanAmount, tradePath, dexPath) => {
+    let otherToken = loanToken === tokenAddress[network].WETH ? tokenAddress[network].DAI : tokenAddress[network].WETH;
+    const init = flashSwapContract.methods.initUniFlashSwap(
+        [loanToken, otherToken],
+        [loanAmount.toFixed(), '0'],
+        tradePath,
+        dexPath
     );
-    let tx = {
+    const tx = {
         from: account,
-        to: router.options.address,
-        gas: 200000,
-        data: swap.encodeABI()
-    }
-    let signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY);
-
-    if(router === un2Router) dex = 'UniswapV2';
-    if(router === suRouter) dex = 'Sushiswap';
-    console.log(`${token[tokenInId]} -> ${token[tokenOutId]} swaping on ${dex} ...`);
+        to: flashSwapContract.options.address,
+        gas: 1000000,
+        data: init.encodeABI()
+    };
+    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY);
 
     try{
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-    
-        let tokenIn = toPrintable(amountIn, tokenDecimal[tokenInId], 4);
-        let tokenOut = toPrintable(amountOut, tokenDecimal[tokenOutId], 4);
-        console.log(`${tokenIn} ${token[tokenInId]} -> ${tokenOut} ${token[tokenOutId]} swaped!`);
-        console.log('Transaction hash:', receipt.transactionHash.yellow);
+        console.log('Transaction hash:', receipt.transactionHash);
     }
     catch(err) {
         console.log(err);
-        process.exit();
     }
 }
 
@@ -213,6 +196,9 @@ const initContract = async () => {
  */
 const runBot = async () => {
     const table = new Table();
+    const dexPath = [];
+    const tokenPath = tokenContract.map(contract => contract.options.address);
+    tokenPath.push(tokenPath.shift());
 
     let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = []/*, shAmountOut = []*/;
     amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0]/* = shAmountOut[0]*/ = BN(initial).times(BN(10).pow(tokenDecimal[0]));
@@ -234,10 +220,22 @@ const runBot = async () => {
         let suAmountPrint = toPrintable(suAmountOut[i + 1], tokenDecimal[next], fixed);
         // let shAmountPrint = toPrintable(shAmountOut[i + 1], tokenDecimal[next], fixed);
 
-        if(amountOut[i + 1].eq(un2AmountOut[i + 1])) un2AmountPrint = un2AmountPrint.underline;
-        if(amountOut[i + 1].eq(un3AmountOut[i + 1])) un3AmountPrint = un3AmountPrint.underline;
-        if(amountOut[i + 1].eq(suAmountOut[i + 1])) suAmountPrint = suAmountPrint.underline;
-        // if(amountOut[i + 1].eq(shAmountOut[i + 1])) shAmountPrint = shAmountPrint.underline;
+        if(amountOut[i + 1].eq(un2AmountOut[i + 1])) {
+            un2AmountPrint = un2AmountPrint.underline;
+            dexPath.push(DEX[network].UniswapV2.id);
+        }
+        if(amountOut[i + 1].eq(un3AmountOut[i + 1])) {
+            un3AmountPrint = un3AmountPrint.underline;
+            dexPath.push(DEX[network].UniswapV3.id);
+        }
+        if(amountOut[i + 1].eq(suAmountOut[i + 1])) {
+            suAmountPrint = suAmountPrint.underline;
+            dexPath.push(DEX[network].SushiswapV2.id);
+        }
+        // if(amountOut[i + 1].eq(shAmountOut[i + 1])) {
+        //     shAmountPrint = shAmountPrint.underline;
+        //     dexPath.push(DEX[network].ShibaswapV2.id);
+        // }
         
         table.addRow({
             'Input Token': `${amountIn} ${token[i]}`,
