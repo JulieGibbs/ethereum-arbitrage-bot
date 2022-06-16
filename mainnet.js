@@ -43,7 +43,7 @@ const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY).address;
-const flashSwapContract = new web3.eth.Contract(IContract.abi, process.env.CONTRACT_ADDRESS);
+const flashSwapContract = new web3.eth.Contract(IContract.abi, process.env.MAINNET_CONTRACT_ADDRESS);
 
 const un2Factory = new web3.eth.Contract(un2IFactory.abi, DEX[network].UniswapV2.Factory);      //UniSwapV2 factory contract
 const un3Factory = new web3.eth.Contract(un3IFactory.abi, DEX[network].UniswapV3.Factory);      //UniSwapV3 factory contract
