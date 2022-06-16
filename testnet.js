@@ -245,7 +245,14 @@ const runBot = async (inputAmount) => {
             profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
         token[0]
     );
-    if(profit.gt(0)) await callFlashSwap(tokenContract[0].options.address, inputAmount, tokenPath, dexPath);
+    if(profit.gt(0)) {
+        let response = await inquirer.prompt([{
+            type: 'input',
+            name: 'isExe',
+            message: `Are you sure execute this trade? (yes/no)`
+        }]);
+        response.isExe === 'yes' && await callFlashSwap(tokenContract[0].options.address, inputAmount, tokenPath, dexPath);
+    }
     
     console.log();
     return [profit, table, dexPath, tokenPath];
