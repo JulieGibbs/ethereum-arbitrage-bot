@@ -56,12 +56,12 @@ const flashSwapContract = new web3.eth.Contract(IContract.abi, process.env.CONTR
 const un2Factory = new web3.eth.Contract(un2IFactory.abi, DEX[network].UniswapV2.Factory);      //UniSwapV2 factory contract
 const un3Factory = new web3.eth.Contract(un3IFactory.abi, DEX[network].UniswapV3.Factory);      //UniSwapV3 factory contract
 const suFactory = new web3.eth.Contract(un2IFactory.abi, DEX[network].SushiswapV2.Factory);     //SushiSwap factory contract
-// const shFactory = new web3.eth.Contract(sbIFactory, DEX[network].ShibaswapV2.Factory);       //ShibaSwap factory contract
+const shFactory = new web3.eth.Contract(sbIFactory, DEX[network].ShibaswapV2.Factory);       //ShibaSwap factory contract
 
 const un2Router = new web3.eth.Contract(un2IRouter.abi, DEX[network].UniswapV2.Router);
 const un3Router = new web3.eth.Contract(un3IRouter.abi, DEX[network].UniswapV3.Router);
 const suRouter = new web3.eth.Contract(un2IRouter.abi, DEX[network].SushiswapV2.Router);
-// const sbRouter = new web3.eth.Contract(sbIRouter, DEX[network].ShibaswapV2.Router);
+const sbRouter = new web3.eth.Contract(sbIRouter, DEX[network].ShibaswapV2.Router);
 
 var tokenContract = [];                 // Array of contracts of tokens
 var tokenDecimal = [];                  // Array of decimals of tokens
@@ -169,22 +169,22 @@ const initContract = async () => {
             ]
         });
 
-        let [un2PairAddress, un3PairAddress, suPairAddress/*, shPairAddress*/] = await Promise.all([
+        let [un2PairAddress, un3PairAddress, suPairAddress, shPairAddress] = await Promise.all([
             un2Factory.methods.getPair(tokenContract[i].options.address, tokenContract[next].options.address).call(),
             un3Factory.methods.getPool(tokenContract[i].options.address, tokenContract[next].options.address, 3000).call(),
             suFactory.methods.getPair(tokenContract[i].options.address, tokenContract[next].options.address).call(),
-            // shFactory.methods.getPair(tokenContract[i].options.address, tokenContract[next].options.address).call()
+            shFactory.methods.getPair(tokenContract[i].options.address, tokenContract[next].options.address).call()
         ]);
         un2Pair[i] = new web3.eth.Contract(un2IPair.abi, un2PairAddress);
         un3Pair[i] = new web3.eth.Contract(un3IPair.abi, un3PairAddress);
         suPair[i] = new web3.eth.Contract(un2IPair.abi, suPairAddress);
-        // shPair[i] = new web3.eth.Contract(sbIPair, shPairAddress);
+        shPair[i] = new web3.eth.Contract(sbIPair, shPairAddress);
 
         table.addRows([
             { dex: 'UniSwapV2', address: un2Pair[i].options.address },
             { dex: 'UniSwapV3', address: un3Pair[i].options.address },
             { dex: 'SushiSwap', address: suPair[i].options.address },
-            // { dex: 'ShibaSwap', address: shPair[i].options.address }
+            { dex: 'ShibaSwap', address: shPair[i].options.address }
         ])
         table.printTable();
     }
@@ -205,8 +205,8 @@ const runBot = async () => {
     const tokenPath = tokenContract.map(contract => contract.options.address);
     tokenPath.push(tokenPath.shift());
 
-    let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = []/*, shAmountOut = []*/;
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0]/* = shAmountOut[0]*/ = BN(initial).times(BN(10).pow(tokenDecimal[0]));
+    let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = [], shAmountOut = [];
+    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = BN(initial).times(BN(10).pow(tokenDecimal[0]));
 
     const [a, b] = BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
@@ -214,19 +214,19 @@ const runBot = async () => {
     for(let i = 0; i < token.length; i++) {
         let next = (i + 1) % token.length;
         
-        [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]/*, shAmountOut[i + 1]*/] = await Promise.all([
+        [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]] = await Promise.all([
             getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Pair[i]),
             getUniswapV3Quote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un3Quoter),
             getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, suPair[i]),
-            // getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shPair[i])
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shPair[i])
         ]);
-        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]/*, shAmountOut[i + 1]*/);
+        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]);
         let amountIn = toPrintable(amountOut[i], tokenDecimal[i], fixed);
 
         let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokenDecimal[next], fixed);
         let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokenDecimal[next], fixed);
         let suAmountPrint = toPrintable(suAmountOut[i + 1], tokenDecimal[next], fixed);
-        // let shAmountPrint = toPrintable(shAmountOut[i + 1], tokenDecimal[next], fixed);
+        let shAmountPrint = toPrintable(shAmountOut[i + 1], tokenDecimal[next], fixed);
 
         if(amountOut[i + 1].eq(un2AmountOut[i + 1])) {
             un2AmountPrint = un2AmountPrint.underline;
@@ -240,17 +240,17 @@ const runBot = async () => {
             suAmountPrint = suAmountPrint.underline;
             dexPath.push(DEX[network].SushiswapV2.id);
         }
-        // if(amountOut[i + 1].eq(shAmountOut[i + 1])) {
-        //     shAmountPrint = shAmountPrint.underline;
-        //     dexPath.push(DEX[network].ShibaswapV2.id);
-        // }
+        if(amountOut[i + 1].eq(shAmountOut[i + 1])) {
+            shAmountPrint = shAmountPrint.underline;
+            dexPath.push(DEX[network].ShibaswapV2.id);
+        }
         
         table.addRow({
             'Input Token': `${amountIn} ${token[i]}`,
             'UniSwapV3': `${un3AmountPrint} ${token[next]}`,
             'UniSwapV2': `${un2AmountPrint} ${token[next]}`,
             'SushiSwap': `${suAmountPrint} ${token[next]}`,
-            // 'ShibaSwap': `${shAmountPrint} ${token[next]}`
+            'ShibaSwap': `${shAmountPrint} ${token[next]}`
         });
     }
     table.printTable();
