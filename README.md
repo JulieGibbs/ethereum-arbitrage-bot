@@ -20,8 +20,13 @@ npm install
 
 4. Run bot
 
+- On mainnet
 ```
-npm start
+node mainnet dai weth
+```
+- On testnet
+```
+node testnet dai weth
 ```
 
 
