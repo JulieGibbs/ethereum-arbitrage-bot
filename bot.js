@@ -91,6 +91,7 @@ const printAccountBalance = async () => {
  * @param {Array<number>} dexPath Swap path of dex
  */
 const callFlashSwap = async (loanToken, loanAmount, tradePath, dexPath) => {
+    console.log('Swapping ...');
     let otherToken = loanToken === tokenAddress[network].WETH ? tokenAddress[network].DAI : tokenAddress[network].WETH;
     const init = flashSwapContract.methods.initUniFlashSwap(
         [loanToken, otherToken],
@@ -108,7 +109,7 @@ const callFlashSwap = async (loanToken, loanAmount, tradePath, dexPath) => {
 
     try{
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-        console.log('Transaction hash:', receipt.transactionHash);
+        console.log('Completed. Transaction hash:', receipt.transactionHash);
     }
     catch(err) {
         console.log(err);
