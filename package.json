@@ -25,6 +25,7 @@
     "colors": "^1.4.0",
     "console-table-printer": "^2.11.0",
     "dotenv": "^16.0.1",
+    "inquirer": "^8.2.4",
     "web3": "^1.7.3"
   }
 }

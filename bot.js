@@ -1,6 +1,7 @@
 require('dotenv').config();
 const Web3 = require('web3');
 const colors = require('colors');
+const inquirer = require('inquirer');
 const { Table } = require('console-table-printer');
 const BN = require('bignumber.js');
 const { getUniswapQuote, getUniswapV3Quote, toPrintable } = require('./utils');
@@ -190,15 +191,17 @@ const initContract = async () => {
 
 /**
  * Display of trading and find arbitrage oppotunity.
+ * @param {BigNumber} initial Initial amount of input token.
+ * @return Return profit, table, dexpath and token path.
  */
-const runBot = async (initial) => {
+const runBot = async (inputAmount) => {
     const table = new Table();
     const dexPath = [];
     const tokenPath = tokenContract.map(contract => contract.options.address);
     tokenPath.push(tokenPath.shift());
 
     let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = [], shAmountOut = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = initial;
+    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = inputAmount;
 
     const [a, b] = BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
@@ -247,10 +250,12 @@ const runBot = async (initial) => {
         });
     }
 
+    table.printTable();
+
     const profit = amountOut[token.length].minus(amountOut[0]).minus(feeAmount);
     console.log(
         'Input:',
-        toPrintable(initial, tokenDecimal[0], fixed),
+        toPrintable(inputAmount, tokenDecimal[0], fixed),
         token[0],
         '\tEstimate profit:',
         profit.gt(0) ?
@@ -258,62 +263,10 @@ const runBot = async (initial) => {
             profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
         token[0]
     );
+    if(profit.gt(0)) await callFlashSwap(tokenContract[0].options.address, input1, tokenPath1, dexPath1);
     
+    console.log();
     return [profit, table, dexPath, tokenPath];
-}
-
-/**
- * Call flashswap contract.
- */
-const trade = async () => {
-    console.log(`Start Trade [ ${token.join(' -> ')} -> ${token[0]} ] ==============================================\n`);
-    var input3 = BN(0.1).times(BN(10).pow(tokenDecimal[0]));
-    
-    let max;
-    let output = BN(0);
-    do {
-        max = output;
-        input3 = input3.times(10);
-        [output] = await runBot(input3);
-    } while(output.gt(max))
-    
-    var input0 = BN(0), input1, input2;
-    
-    while(true) {
-        input1 = BN(input0.times(2).plus(input3).idiv(3));
-        input2 = BN(input3.times(2).plus(input0).idiv(3));
-        let [
-            [output1, table1, dexPath1, tokenPath1],
-            [output2, table2, dexPath2, tokenPath2]
-        ] = await Promise.all([
-            runBot(input1),
-            runBot(input2)
-        ]);
-        
-        if(output1.gt(output2)) input3 = input2;
-        if(output1.lt(output2)) input0 = input1;
-
-        if(output1.minus(output2).abs().lt(BN(10).pow(tokenDecimal[0] - 2))) {
-            if(output1.gt(0) || output2.gt(0)) {
-                if(output1.gt(output2)) {
-                    table1.printTable();
-                    await callFlashSwap(tokenContract[0].options.address, input1, tokenPath1, dexPath1);
-                }
-                else {
-                    table2.printTable();
-                    await callFlashSwap(tokenContract[0].options.address, input2, tokenPath2, dexPath2);
-                }
-                await printAccountBalance();
-            }
-            else {
-                table1.printTable();
-                console.log('There\'s no oppotunity!\n'.red);
-            }
-            break;
-        }
-        console.log('--------------------------');
-    }
-    await trade();
 }
 
 /**
@@ -321,7 +274,14 @@ const trade = async () => {
  */
 const main = async () => {
     await initContract();
-    await trade();    
+    while(true) {
+        let response = await inquirer.prompt([{
+            type: 'input',
+            name: 'input',
+            message: `Please input ${token[0]} amount:`
+        }]);
+        await runBot(BN(response.input).times(BN(10).pow(tokenDecimal[0])));
+    }
 }
 
 main();
