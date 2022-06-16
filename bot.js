@@ -28,12 +28,12 @@ const network = 'Mainnet';
 /**
  * Tokens to trade.
  */
-const token = ['WETH', 'DAI'];
+const token = ['DAI', 'WETH'];
 
 /**
  * Initial amount of token.
  */
-const initial = 1;
+// const initial = 1;
 
 /**
  * Flashloan fee.
@@ -190,14 +190,14 @@ const initContract = async () => {
 /**
  * Display of trading and find arbitrage oppotunity.
  */
-const runBot = async () => {
+const runBot = async (initial) => {
     const table = new Table();
     const dexPath = [];
     const tokenPath = tokenContract.map(contract => contract.options.address);
     tokenPath.push(tokenPath.shift());
 
     let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = [], shAmountOut = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = BN(initial).times(BN(10).pow(tokenDecimal[0]));
+    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = initial;
 
     const [a, b] = BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
@@ -223,19 +223,20 @@ const runBot = async () => {
             un2AmountPrint = un2AmountPrint.underline;
             dexPath.push(DEX[network].UniswapV2.id);
         }
-        if(amountOut[i + 1].eq(un3AmountOut[i + 1])) {
+        else if(amountOut[i + 1].eq(un3AmountOut[i + 1])) {
             un3AmountPrint = un3AmountPrint.underline;
             dexPath.push(DEX[network].UniswapV3.id);
         }
-        if(amountOut[i + 1].eq(suAmountOut[i + 1])) {
+        else if(amountOut[i + 1].eq(suAmountOut[i + 1])) {
             suAmountPrint = suAmountPrint.underline;
             dexPath.push(DEX[network].SushiswapV2.id);
         }
-        if(amountOut[i + 1].eq(shAmountOut[i + 1])) {
+        else if(amountOut[i + 1].eq(shAmountOut[i + 1])) {
             shAmountPrint = shAmountPrint.underline;
             dexPath.push(DEX[network].ShibaswapV2.id);
         }
-        
+        else dexPath.push(0);
+
         table.addRow({
             'Input Token': `${amountIn} ${token[i]}`,
             'UniSwapV3': `${un3AmountPrint} ${token[next]}`,
@@ -244,14 +245,74 @@ const runBot = async () => {
             'ShibaSwap': `${shAmountPrint} ${token[next]}`
         });
     }
-    table.printTable();
 
-    if(amountOut[0].lt(amountOut[token.length])) {
-        console.log('Arbitrage Found! Estimate profit:'.green, toPrintable(amountOut[token.length].minus(amountOut[0]), tokenDecimal[0], fixed), token[0]);
+    const profit = amountOut[token.length].minus(amountOut[0]).minus(feeAmount);
+    console.log(
+        'Input:',
+        toPrintable(initial, tokenDecimal[0], fixed),
+        token[0],
+        '\tEstimate profit:',
+        profit.gt(0) ?
+            profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).green :
+            profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
+        token[0]
+    );
+    
+    return [profit, table, dexPath, tokenPath];
+}
+
+/**
+ * Call flashswap contract.
+ */
+const trade = async () => {
+    console.log(`Start Trade [ ${token.join(' -> ')} -> ${token[0]} ] ==============================================\n`);
+    var input3 = BN(0.1).times(BN(10).pow(tokenDecimal[0]));
+    
+    let max;
+    let output = BN(0);
+    do {
+        max = output;
+        input3 = input3.times(10);
+        [output] = await runBot(input3);
+    } while(output.gt(max))
+    
+    var input0 = BN(0), input1, input2;
+    
+    while(true) {
+        input1 = BN(input0.times(2).plus(input3).idiv(3));
+        input2 = BN(input3.times(2).plus(input0).idiv(3));
+        let [
+            [output1, table1, dexPath1, tokenPath1],
+            [output2, table2, dexPath2, tokenPath2]
+        ] = await Promise.all([
+            runBot(input1),
+            runBot(input2)
+        ]);
         
+        if(output1.gt(output2)) input3 = input2;
+        if(output1.lt(output2)) input0 = input1;
+
+        if(output1.minus(output2).abs().lt(BN(10).pow(tokenDecimal[0] - 2))) {
+            if(output1.gt(0) || output2.gt(0)) {
+                if(output1.gt(output2)) {
+                    table1.printTable();
+                    await callFlashSwap(tokenContract[0].options.address, input1, tokenPath1, dexPath1);
+                }
+                else {
+                    table2.printTable();
+                    await callFlashSwap(tokenContract[0].options.address, input2, tokenPath2, dexPath2);
+                }
+                await printAccountBalance();
+            }
+            else {
+                table1.printTable();
+                console.log('There\'s no oppotunity!\n'.red);
+            }
+            break;
+        }
+        console.log('--------------------------');
     }
-    console.log();
-    setTimeout(runBot, 1000);
+    await trade();
 }
 
 /**
@@ -259,7 +320,7 @@ const runBot = async () => {
  */
 const main = async () => {
     await initContract();
-    runBot();
+    await trade();    
 }
 
 main();
