@@ -263,7 +263,7 @@ const runBot = async (inputAmount) => {
             profit.div(BN(10).pow(tokenDecimal[0])).toFixed(fixed).red,
         token[0]
     );
-    if(profit.gt(0)) await callFlashSwap(tokenContract[0].options.address, input1, tokenPath1, dexPath1);
+    if(profit.gt(0)) await callFlashSwap(tokenContract[0].options.address, inputAmount, tokenPath, dexPath);
     
     console.log();
     return [profit, table, dexPath, tokenPath];
