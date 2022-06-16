@@ -17,10 +17,6 @@ const un2IPair = require('@uniswap/v2-core/build/IUniswapV2Pair.json');
 const un3IPair = require('@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json');
 const sbIPair = require('@shibaswap/core/build/abi/IUniswapV2Pair.json');
 
-const un2IRouter = require('@uniswap/v2-periphery/build/IUniswapV2Router02.json');
-const un3IRouter = require('@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json');
-const sbIRouter = require('@shibaswap/core/build/abi/IUniswapV2Router02.json');
-
 const un3IQuoter = require('@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json');
 const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 
@@ -57,11 +53,6 @@ const un2Factory = new web3.eth.Contract(un2IFactory.abi, DEX[network].UniswapV2
 const un3Factory = new web3.eth.Contract(un3IFactory.abi, DEX[network].UniswapV3.Factory);      //UniSwapV3 factory contract
 const suFactory = new web3.eth.Contract(un2IFactory.abi, DEX[network].SushiswapV2.Factory);     //SushiSwap factory contract
 const shFactory = new web3.eth.Contract(sbIFactory, DEX[network].ShibaswapV2.Factory);       //ShibaSwap factory contract
-
-const un2Router = new web3.eth.Contract(un2IRouter.abi, DEX[network].UniswapV2.Router);
-const un3Router = new web3.eth.Contract(un3IRouter.abi, DEX[network].UniswapV3.Router);
-const suRouter = new web3.eth.Contract(un2IRouter.abi, DEX[network].SushiswapV2.Router);
-const sbRouter = new web3.eth.Contract(sbIRouter, DEX[network].ShibaswapV2.Router);
 
 var tokenContract = [];                 // Array of contracts of tokens
 var tokenDecimal = [];                  // Array of decimals of tokens
