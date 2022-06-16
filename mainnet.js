@@ -27,11 +27,6 @@ const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 const network = 'Mainnet';
 
 /**
- * Tokens to trade.
- */
-const token = ['DAI', 'WETH'];
-
-/**
  * Initial amount of token.
  */
 // const initial = 1;
@@ -55,6 +50,7 @@ const un3Factory = new web3.eth.Contract(un3IFactory.abi, DEX[network].UniswapV3
 const suFactory = new web3.eth.Contract(un2IFactory.abi, DEX[network].SushiswapV2.Factory);     //SushiSwap factory contract
 const shFactory = new web3.eth.Contract(sbIFactory, DEX[network].ShibaswapV2.Factory);       //ShibaSwap factory contract
 
+var token;
 var tokenContract = [];                 // Array of contracts of tokens
 var tokenDecimal = [];                  // Array of decimals of tokens
 var un2Pair = [];                       // UniSwapV2 token pair contract
@@ -273,6 +269,19 @@ const runBot = async (inputAmount) => {
  * Bot start here.
  */
 const main = async () => {
+    token = process.argv.slice(2);
+    if(token.length < 2) {
+        console.log('Please input at least two token.');
+        process.exit();
+    }
+    token = token.map(e => e.toUpperCase());
+    token.forEach(e => {
+        if(!tokenAddress[network][e]) {
+            console.log(`There's no ${e} token.`);
+            process.exit();
+        }
+    });
+
     await initContract();
     while(true) {
         let response = await inquirer.prompt([{

@@ -4,8 +4,7 @@
   "description": "Flashloan Bot Arbitrage Finder",
   "main": "bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node bot.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "arbitrage",
