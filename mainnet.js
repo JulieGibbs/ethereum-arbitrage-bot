@@ -10,15 +10,10 @@ const tokenAddress = require('./config/token.json');
 const DEX = require('./config/dex.json');
 const IContract = require('./config/UniswapFlash.json');
 
-const un2IFactory = require('@uniswap/v2-core/build/IUniswapV2Factory.json');
-const un3IFactory = require('@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json');
-const sbIFactory = require('@shibaswap/core/build/abi/IUniswapV2Factory.json');
-
-const un2IPair = require('@uniswap/v2-core/build/IUniswapV2Pair.json');
-const un3IPair = require('@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json');
-const sbIPair = require('@shibaswap/core/build/abi/IUniswapV2Pair.json');
-
 const un3IQuoter = require('@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json');
+const un2IRouter = require('@uniswap/v2-periphery/build/IUniswapV2Router02.json');
+const shIRouter = require('@shibaswap/core/build/abi/IUniswapV2Router02.json');
+
 const IERC20 = require('@uniswap/v2-periphery/build/IERC20.json');
 
 /**
@@ -45,10 +40,9 @@ const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY).address;
 const flashSwapContract = new web3.eth.Contract(IContract.abi, process.env.MAINNET_CONTRACT_ADDRESS);
 
-const un2Factory = new web3.eth.Contract(un2IFactory.abi, DEX[network].UniswapV2.Factory);      //UniSwapV2 factory contract
-const un3Factory = new web3.eth.Contract(un3IFactory.abi, DEX[network].UniswapV3.Factory);      //UniSwapV3 factory contract
-const suFactory = new web3.eth.Contract(un2IFactory.abi, DEX[network].SushiswapV2.Factory);     //SushiSwap factory contract
-const shFactory = new web3.eth.Contract(sbIFactory, DEX[network].ShibaswapV2.Factory);       //ShibaSwap factory contract
+var un3Quoter = new web3.eth.Contract(un3IQuoter.abi, DEX[network].UniswapV3.Quoter);
+const un2Router = new web3.eth.Contract(un2IRouter.abi, DEX[network].UniswapV2.Router);
+const shRouter = new web3.eth.Contract(shIRouter, DEX[network].ShibaswapV2.Router);
 
 var token;
 var tokenContract = [];                 // Array of contracts of tokens
@@ -57,7 +51,6 @@ var un2Pair = [];                       // UniSwapV2 token pair contract
 var un3Pair = [];                       // UniSwapV3 token pair contract
 var suPair = [];                        // SushiSwap token pair contract
 var shPair = [];                        // ShibaSwap token pair contract
-var un3Quoter = new web3.eth.Contract(un3IQuoter.abi, DEX[network].UniswapV3.Quoter);
 
 /**
  * Print user's eth and tokens balance.
@@ -145,38 +138,6 @@ const initContract = async () => {
         });
     });
     tokenTable.printTable();
-    console.log();
-    
-    // Initialize token pair contracts.
-    for(let i = 0; i < token.length; i++) {
-        let next = (i + 1) % token.length;
-        let table = new Table({
-            title: `${token[i]} -> ${token[next]}`.green,
-            columns: [
-                { name: 'dex', title: 'DEX', alignment: 'center' },
-                { name: 'address', title: 'Pool Contract Address', alignment: 'center' }
-            ]
-        });
-
-        let [un2PairAddress, un3PairAddress, suPairAddress, shPairAddress] = await Promise.all([
-            un2Factory.methods.getPair(tokenContract[i].options.address, tokenContract[next].options.address).call(),
-            un3Factory.methods.getPool(tokenContract[i].options.address, tokenContract[next].options.address, 3000).call(),
-            suFactory.methods.getPair(tokenContract[i].options.address, tokenContract[next].options.address).call(),
-            shFactory.methods.getPair(tokenContract[i].options.address, tokenContract[next].options.address).call()
-        ]);
-        un2Pair[i] = new web3.eth.Contract(un2IPair.abi, un2PairAddress);
-        un3Pair[i] = new web3.eth.Contract(un3IPair.abi, un3PairAddress);
-        suPair[i] = new web3.eth.Contract(un2IPair.abi, suPairAddress);
-        shPair[i] = new web3.eth.Contract(sbIPair, shPairAddress);
-
-        table.addRows([
-            { dex: 'UniSwapV2', address: un2Pair[i].options.address },
-            { dex: 'UniSwapV3', address: un3Pair[i].options.address },
-            { dex: 'SushiSwap', address: suPair[i].options.address },
-            { dex: 'ShibaSwap', address: shPair[i].options.address }
-        ])
-        table.printTable();
-    }
     
     console.log();
     console.log('Contract is initialized.');
@@ -206,10 +167,10 @@ const runBot = async (inputAmount) => {
         let next = (i + 1) % token.length;
         
         [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]] = await Promise.all([
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Pair[i]),
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router),
             getUniswapV3Quote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un3Quoter),
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, suPair[i]),
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shPair[i])
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router),
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shRouter)
         ]);
         amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]);
         let amountIn = toPrintable(amountOut[i], tokenDecimal[i], fixed);

@@ -21,20 +21,17 @@ const getAmountOut = (amountIn, reserveIn, reserveOut) => {
  * @param {string | BigNumber} amountIn Input amount of token
  * @param {string} tokenIn Input token address
  * @param {string} tokenOut Output token address
- * @param {Contract} pair Pair contract
+ * @param {Contract} router Router contract
  * @returns Output amount of token
  */
-const getUniswapQuote = async (amountIn, tokenIn, tokenOut, pair) => {
-    // If token pair contract is null address, return infinity
-    if(pair.options.address === '0x0000000000000000000000000000000000000000') return BN(-Infinity);
-
-    // Get reserves of tokens in pair contract.
-    let reserves = await pair.methods.getReserves().call();
-    let reserve1 = reserves[0], reserve2 = reserves[1];
-    // In token pair contract, tokens is ordered by its address.
-    if(tokenIn > tokenOut) [reserve1, reserve2] = [reserve2, reserve1];
-    
-    return getAmountOut(amountIn, reserve1, reserve2);
+const getUniswapQuote = async (amountIn, tokenIn, tokenOut, router) => {
+    try{
+        let amountOuts = await router.methods.getAmountsOut(amountIn.toFixed(), [tokenIn, tokenOut]).call();
+        return BN(amountOuts[1]);
+    }
+    catch(err) {
+        return BN(-Infinity);
+    }
 }
 
 /**
