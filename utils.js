@@ -3,20 +3,6 @@ const axios = require('axios');
 const BN = require('bignumber.js');
 
 /**
- * Given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset.
- * @param {string | BigNumber} amountIn Input amount of token1
- * @param {string | BigNumber} reserveIn Reserve of token1
- * @param {string | BigNumber} reserveOut Reserve of token2
- * @returns Output amount of token2
- */
-const getAmountOut = (amountIn, reserveIn, reserveOut) => {
-    let amountInWithFee = BN(amountIn).times(997);
-    let numerator = amountInWithFee.times(reserveOut);
-    let denominator = BN(reserveIn).times(1000).plus(amountInWithFee);
-    return numerator.idiv(denominator);
-}
-
-/**
  * Calculate token price.
  * @param {string | BigNumber} amountIn Input amount of token
  * @param {string} tokenIn Input token address
