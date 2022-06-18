@@ -10,12 +10,6 @@ const tokenAddress = require('./config/token.json');
 const DEX = require('./config/dex.json');
 const IContract = require('./config/UniswapFlash.json');
 
-const un2IFactory = require('@uniswap/v2-core/build/IUniswapV2Factory.json');
-const un3IFactory = require('@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json');
-
-const un2IPair = require('@uniswap/v2-core/build/IUniswapV2Pair.json');
-const un3IPair = require('@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json');
-
 const un3IQuoter = require('@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json');
 const un2IRouter = require('@uniswap/v2-periphery/build/IUniswapV2Router02.json');
 

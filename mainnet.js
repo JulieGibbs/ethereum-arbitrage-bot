@@ -47,10 +47,6 @@ const shRouter = new web3.eth.Contract(shIRouter, DEX[network].ShibaswapV2.Route
 var token;
 var tokenContract = [];                 // Array of contracts of tokens
 var tokenDecimal = [];                  // Array of decimals of tokens
-var un2Pair = [];                       // UniSwapV2 token pair contract
-var un3Pair = [];                       // UniSwapV3 token pair contract
-var suPair = [];                        // SushiSwap token pair contract
-var shPair = [];                        // ShibaSwap token pair contract
 
 /**
  * Print user's eth and tokens balance.
