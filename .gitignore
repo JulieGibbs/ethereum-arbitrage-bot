@@ -3,4 +3,4 @@ package-lock.json
 yarn.lock
 test.js
 .env
-.output.json
+output.json

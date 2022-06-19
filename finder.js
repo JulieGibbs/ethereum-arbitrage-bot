@@ -36,7 +36,8 @@ const shRouter = new web3.eth.Contract(shIRouter, DEX[network].ShibaswapV2.Route
 
 /**
  * Display of trading and find arbitrage oppotunity.
- * @param {BigNumber} initial Initial amount of input token.
+ * @param {BigNumber} amountIn Input amount of input token.
+ * @param {Array<Token>} tokenPath Token swap path.
  * @return Return profit, table, dexpath and token path.
  */
 const calculateProfit = async (amountIn, tokenPath) => {
@@ -127,14 +128,22 @@ const main = async () => {
     }
     
     for(i in tokens) {
-        let input = BN(10).pow(tokens[i].decimals);
-        let { profit, table } = await calculateProfit(input, [tokens[i], WETH]);
+        let input = BN(10).times(BN(10).pow(tokens[i].decimals));
+        let path = [tokens[i], WETH];
+        let { profit, table } = await calculateProfit(input, path);
         if(profit > 0) {
             fileContent.push({
-                path: [tokens[i].symbol, WETH.symbol]
+                path: path.map(t => t.symbol),
+                profit: profit.div(BN(10).pow(path[0].decimals)).toFixed(fixed)
             });
         };
     }
+
+    fileContent.sort((a, b) => {
+        if (a.profit > b.profit) return -1;
+        if (a.profit < b.profit) return 1;
+        return 0;
+    });
 
     fs.writeFileSync('output.json', JSON.stringify(fileContent), console.log);
 }
