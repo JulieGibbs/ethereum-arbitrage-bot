@@ -38,3 +38,15 @@ node testnet dai weth
 
 
 ## Adding a new DEX
+
+
+
+# Short List scan of top Volume tokens only
+
+- Doing a "short scan" of the "short" lists
+
+```
+yarn node finder2pairshort
+```
+
+- Added 19th June, 22:20.
