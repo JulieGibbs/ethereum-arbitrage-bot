@@ -41,6 +41,7 @@ const shRouter = new web3.eth.Contract(shIRouter, DEX[network].ShibaswapV2.Route
  * @return Return profit, table, dexpath and token path.
  */
 const calculateProfit = async (amountIn, tokenPath) => {
+    console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);
     const table = new Table();
     const dexPath = [];
 
@@ -94,21 +95,22 @@ const calculateProfit = async (amountIn, tokenPath) => {
         });
     }
 
-    table.printTable();
-
     const profit = amountOut[tokenPath.length].minus(amountOut[0]).minus(feeAmount);
-    console.log(
-        'Input:',
-        toPrintable(amountIn, tokens[0].decimals, fixed),
-        tokenPath[0].symbol,
-        '\tEstimate profit:',
-        profit.gt(0) ?
-            profit.div(BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-            profit.div(BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        tokenPath[0].symbol,
-        '\n'
-    );
-    
+
+    if(profit.isFinite()) {
+        table.printTable();
+        console.log(
+            'Input:',
+            toPrintable(amountIn, tokens[0].decimals, fixed),
+            tokenPath[0].symbol,
+            '\tEstimate profit:',
+            profit.gt(0) ?
+                profit.div(BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
+                profit.div(BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
+            tokenPath[0].symbol,
+            '\n'
+        );
+    }
     return { profit, table, dexPath };
 }
 
@@ -127,16 +129,19 @@ const main = async () => {
         "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
     }
     
-    for(i in tokens) {
-        let input = BN(10).times(BN(10).pow(tokens[i].decimals));
-        let path = [tokens[i], WETH];
-        let { profit, table } = await calculateProfit(input, path);
-        if(profit > 0) {
-            fileContent.push({
-                path: path.map(t => t.symbol),
-                profit: profit.div(BN(10).pow(path[0].decimals)).toFixed(fixed)
-            });
-        };
+    for(let i in tokens) {
+        for(let j in tokens) {
+            if(i === j) continue;
+            let input = BN(1).times(BN(10).pow(tokens[i].decimals));
+            let path = [tokens[i], WETH, tokens[j]];
+            let { profit } = await calculateProfit(input, path);
+            if(profit > 0) {
+                fileContent.push({
+                    path: path.map(t => t.symbol),
+                    profit: profit.div(BN(10).pow(path[0].decimals)).toFixed(fixed)
+                });
+            };
+        }
     }
 
     fileContent.sort((a, b) => {
