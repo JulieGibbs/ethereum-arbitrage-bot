@@ -79,6 +79,27 @@ const getPriceFromApi = async (tokenIn, tokenOut, amountIn, version, network) =>
         return BN(-Infinity);
     }
 }
+const getPriceFrom1InchApi = async (tokenIn, tokenOut, amountIn, network) => {
+    let chainId = 1;
+    if(network === 'Ropsten') chainId = 3;
+    if(network === 'Rinkeby') chainId = 4;
+    if(network === 'Goerli') chainId = 5;
+    if(network === 'Kovan') chainId = 42;
+    try{
+        const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/quote`, {
+            params: {
+                fromTokenAddress: tokenIn,
+                toTokenAddress: tokenOut,
+                amount: amountIn.toFixed()
+            }
+        });
+        return res.data;
+    }
+    catch(err) {
+        console.log(err.message);
+        return null;
+    }
+}
 
 /**
  * Change big number to fixed.
@@ -97,5 +118,6 @@ module.exports = {
     getUniswapQuote,
     getUniswapV3Quote,
     getPriceFromApi,
+    getPriceFrom1InchApi,
     toPrintable
 }
