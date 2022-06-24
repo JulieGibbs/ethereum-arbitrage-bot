@@ -15,7 +15,7 @@ import TOKEN from '../config/mainnet.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
-import IContract from '../abi/UniswapFlash.json';
+import IContract from '../abi/UniswapFlash-kovan.json';
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
 import un2IRouter from '../abi/IUniswapV2Router02.json';
 import IERC20 from '../abi/IERC20.json';
