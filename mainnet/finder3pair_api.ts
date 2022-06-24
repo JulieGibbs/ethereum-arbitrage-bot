@@ -3,12 +3,12 @@ import fs from 'fs';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getPriceFrom1InchApi, toPrintable } from './lib/utils';
+import { getPriceFrom1InchApi, toPrintable } from '../lib/utils';
 
 // Types
-import { Token, Network, FileContent } from './lib/types';
+import { Token, Network, FileContent } from '../lib/types';
 
-const TOKEN = require('./config/mainnet.json');
+const TOKEN = require('../config/mainnet.json');
 
 dotenv.config();
 

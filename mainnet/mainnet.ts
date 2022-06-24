@@ -4,28 +4,29 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getUniswapQuote, getUniswapV3Quote, toPrintable } from './lib/utils';
+import { getUniswapQuote, getUniswapV3Quote, toPrintable } from '../lib/utils';
 
 // Types
-import { Token, Network } from './lib/types';
+import { Token, Network } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
-import TOKEN from './config/testTokens.json';
-import DEX from './config/dex.json';
+import TOKEN from '../config/mainnet.json';
+import DEX from '../config/dexs.json';
 
 // ABIs
-import IContract from './abi/UniswapFlash.json';
-import un3IQuoter from './abi/UniswapV3IQuoter.json';
-import un2IRouter from './abi/IUniswapV2Router02.json';
-import IERC20 from './abi/IERC20.json';
+import IContract from '../abi/UniswapFlash.json';
+import un3IQuoter from '../abi/UniswapV3IQuoter.json';
+import un2IRouter from '../abi/IUniswapV2Router02.json';
+import shIRouter from '../abi/IUniswapV2Router02.json';
+import IERC20 from '../abi/IERC20.json';
 
 dotenv.config();
 
 /**
  * The network on which the bot runs.
  */
-const network: Network = 'kovan';
+const network: Network = 'mainnet';
 
 /**
  * Initial amount of token.
@@ -48,6 +49,7 @@ const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], proc
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
+const shRouter = new web3.eth.Contract(shIRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
 
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -82,7 +84,7 @@ const printAccountBalance = async () => {
  */
 const callFlashSwap = async (loanToken: string, loanAmount: BN, tradePath: string[], dexPath: number[]) => {
     console.log('Swapping ...');
-    let otherToken = loanToken === TOKEN[network].WETH.address ? TOKEN[network].DAI.address : TOKEN[network].WETH.address;
+    let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
     const init = flashSwapContract.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
@@ -133,8 +135,8 @@ const runBot = async (inputAmount: BN) => {
     const tokenPath = tokens.map(_token => _token.address);
     tokenPath.push(tokenPath.shift()!);
 
-    const amountOut: BN[] = [], un2AmountOut: BN[] = [], un3AmountOut: BN[] = [], suAmountOut: BN[] = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = inputAmount;
+    const amountOut: BN[] = [], un2AmountOut: BN[] = [], un3AmountOut: BN[] = [], suAmountOut: BN[] = [], shAmountOut: BN[] = [];
+    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = inputAmount;
 
     const [a, b] = new BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
@@ -142,17 +144,19 @@ const runBot = async (inputAmount: BN) => {
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
 
-        [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]] = await Promise.all([
+        [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]] = await Promise.all([
             getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router),
             getUniswapV3Quote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un3Quoter),
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router)
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router),
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shRouter)
         ]);
-        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]);
+        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]);
         let amountIn = toPrintable(amountOut[i], tokens[i].decimals, fixed);
 
         let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokens[next].decimals, fixed);
         let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokens[next].decimals, fixed);
         let suAmountPrint = toPrintable(suAmountOut[i + 1], tokens[next].decimals, fixed);
+        let shAmountPrint = toPrintable(shAmountOut[i + 1], tokens[next].decimals, fixed);
 
         if (amountOut[i + 1].eq(un2AmountOut[i + 1])) {
             un2AmountPrint = un2AmountPrint.underline;
@@ -166,13 +170,18 @@ const runBot = async (inputAmount: BN) => {
             suAmountPrint = suAmountPrint.underline;
             dexPath.push(DEX[network].SushiswapV2.id);
         }
+        else if (amountOut[i + 1].eq(shAmountOut[i + 1])) {
+            shAmountPrint = shAmountPrint.underline;
+            dexPath.push(DEX[network].ShibaswapV2.id);
+        }
         else dexPath.push(0);
 
         table.addRow({
             'Input Token': `${amountIn} ${tokens[i].symbol}`,
             'UniSwapV3': `${un3AmountPrint} ${tokens[next].symbol}`,
             'UniSwapV2': `${un2AmountPrint} ${tokens[next].symbol}`,
-            'SushiSwap': `${suAmountPrint} ${tokens[next].symbol}`
+            'SushiSwap': `${suAmountPrint} ${tokens[next].symbol}`,
+            'ShibaSwap': `${shAmountPrint} ${tokens[next].symbol}`
         });
     }
 

@@ -4,21 +4,21 @@ import Web3 from 'web3';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getUniswapQuote, getUniswapV3Quote, toPrintable, getKyberQuote, getBalancerQuote } from './lib/utils';
+import { getUniswapQuote, getUniswapV3Quote, toPrintable, getKyberQuote, getBalancerQuote } from '../lib/utils';
 
 // Types
-import { Token, Network, FileContent } from './lib/types';
+import { Token, Network, FileContent } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 
-import TOKEN from './config/mainnetshort.json';
-import DEX from './config/dex.json';
+import TOKEN from '../config/tokens.json';
+import DEX from '../config/dexs.json';
 
 // ABIs
-import un3IQuoter from './abi/UniswapV3IQuoter.json';
-import un2IRouter from './abi/IUniswapV2Router02.json';
-import shIRouter from './abi/IUniswapV2Router02.json';
-import bsIRouter from './abi/BalancerVault.json';
-import kyberIQuoter from './abi/KyberQuoter.json';
+import un3IQuoter from '../abi/UniswapV3IQuoter.json';
+import un2IRouter from '../abi/IUniswapV2Router02.json';
+import shIRouter from '../abi/IUniswapV2Router02.json';
+import bsIRouter from '../abi/BalancerVault.json';
+import kyberIQuoter from '../abi/KyberQuoter.json';
 
 dotenv.config();
 
@@ -166,15 +166,18 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 const main = async () => {
     const fileContent: FileContent = [];
 
-    for (let i in TOKEN) {
-        let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
-        let path = [TOKEN[i], TOKEN['WETH']];
-        let { profit } = await calculateProfit(input, path);
-        if (profit.gt(0)) {
-            fileContent.push({
-                path: path.map(t => t.symbol),
-                profit: profit.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
-            });
+    for (let i in TOKEN[network]) {
+        for (let j in TOKEN[network]) {
+            if (i === j) continue;
+            let input = new BN(1).times(new BN(10).pow(TOKEN[network][i].decimals));
+            let path = [TOKEN[network][i], TOKEN[network]['WETH'], TOKEN[network][j]];
+            let { profit } = await calculateProfit(input, path);
+            if (profit.gt(0)) {
+                fileContent.push({
+                    path: path.map(t => t.symbol),
+                    profit: profit.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
+                });
+            }
         }
     }
 

@@ -39,13 +39,24 @@ npm install
 4. Run bot
 
 - On mainnet
-```
-ts-node mainnet dai weth
-```
+    * finder2pair bot
+        ```
+        yarn main-finder2
+        ```
+    * trader bot
+        ```
+        yarn main-trader dai weth
+        ```
 - On testnet
-```
-ts-node testnet dai weth
-```
+    * finder2pair bot
+        ```
+        yarn test-finder2
+        ```
+    * trader bot
+        ```
+        yarn test-trader dai weth
+        ```
+
 
 
 # Developer Instructions - Flashloan
