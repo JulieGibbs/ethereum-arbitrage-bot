@@ -1,0 +1,136 @@
+{
+    "rinkeby": {
+        "WETH": {
+            "address": "0xc778417E063141139Fce010982780140Aa0cD5Ab",
+            "name": "Wrapped Ether",
+            "symbol": "WETH",
+            "decimals": 18
+        },
+        "DAI": {
+            "address": "0x95b58a6Bff3D14B7DB2f5cb5F0Ad413DC2940658",
+            "name": "Dai Stablecoin",
+            "symbol": "DAI",
+            "decimals": 18
+        },
+        "USDT": {
+            "address":"0x3B00Ef435fA4FcFF5C209a37d1f3dcff37c705aD",
+            "name": "Tether USD",
+            "symbol": "USDT",
+            "decimals": 6
+        },
+        "USDC": {
+            "address":"0xeb8f08a975Ab53E34D8a0330E0D34de942C95926",
+            "name": "USDCoin",
+            "symbol": "USDC",
+            "decimals": 6
+        },
+        "MKR": {
+            "address":"0xF9bA5210F91D0474bd1e1DcDAeC4C58E359AaD85",
+            "name": "Maker",
+            "symbol": "MKR",
+            "decimals": 18
+        },
+        "UNI": {
+            "address":"0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+            "name": "Uniswap",
+            "symbol": "UNI",
+            "decimals": 18
+        }
+    },
+    "ropsten": {
+        "WETH": {
+            "address":"0xc778417E063141139Fce010982780140Aa0cD5Ab",
+            "name": "Wrapped Ether",
+            "symbol": "WETH",
+            "decimals": 18
+        },
+        "DAI": {
+            "address":"0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa",
+            "name": "Dai Stablecoin",
+            "symbol": "DAI",
+            "decimals": 18
+        },
+        "USDT": {
+            "address":"0x6EE856Ae55B6E1A249f04cd3b947141bc146273c",
+            "name": "Tether USD",
+            "symbol": "USDT",
+            "decimals": 6
+        },
+        "USDC": {
+            "address":"0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
+            "name": "USDCoin",
+            "symbol": "USDC",
+            "decimals": 6
+        },
+        "UNI": {
+            "address":"0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+            "name": "Uniswap",
+            "symbol": "UNI",
+            "decimals": 18
+        }
+    },
+    "kovan": {
+        "WETH": {
+            "address":"0xd0A1E359811322d97991E03f863a0C30C2cF029C",
+            "name": "Wrapped Ether",
+            "symbol": "WETH",
+            "decimals": 18
+        },
+        "DAI": {
+            "address":"0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa",
+            "name": "Dai Stablecoin",
+            "symbol": "DAI",
+            "decimals": 18
+        },
+        "USDT": {
+            "address":"0xf3e0d7bF58c5d455D31ef1c2d5375904dF525105",
+            "name": "Tether USD",
+            "symbol": "USDT",
+            "decimals": 6
+        },
+        "USDC": {
+            "address":"0xc2569dd7d0fd715B054fBf16E75B001E5c0C1115",
+            "name": "USDCoin",
+            "symbol": "USDC",
+            "decimals": 6
+        },
+        "MKR": {
+            "address":"0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD",
+            "name": "Maker",
+            "symbol": "MKR",
+            "decimals": 18
+        },
+        "UNI": {
+            "address":"0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+            "name": "Uniswap",
+            "symbol": "UNI",
+            "decimals": 18
+        }
+    },
+    "goerli": {
+        "WETH": {
+            "address":"0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+            "name": "Wrapped Ether",
+            "symbol": "WETH",
+            "decimals": 18
+        },
+        "DAI": {
+            "address":"0x73967c6a0904aA032C103b4104747E88c566B1A2",
+            "name": "Dai Stablecoin",
+            "symbol": "DAI",
+            "decimals": 18
+        },
+        "USDT": {
+            "address":"0x509Ee0d083DdF8AC028f2a56731412edD63223B9",
+            "name": "Tether USD",
+            "symbol": "USDT",
+            "decimals": 6
+        },
+        "USDC": {
+            "address":"0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
+            "name": "USDCoin",
+            "symbol": "USDC",
+            "decimals": 6
+        }
+    }
+}

@@ -11,7 +11,7 @@ import { Token, Network } from './lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
-import TOKEN from './config/testnet.json';
+import TOKEN from './config/testTokens.json';
 import DEX from './config/dex.json';
 
 // ABIs
@@ -82,7 +82,7 @@ const printAccountBalance = async () => {
  */
 const callFlashSwap = async (loanToken: string, loanAmount: BN, tradePath: string[], dexPath: number[]) => {
     console.log('Swapping ...');
-    let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
+    let otherToken = loanToken === TOKEN[network].WETH.address ? TOKEN[network].DAI.address : TOKEN[network].WETH.address;
     const init = flashSwapContract.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
