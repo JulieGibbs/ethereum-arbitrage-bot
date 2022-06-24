@@ -1,6 +1,24 @@
 # Flashloan Arbitrage Bot
 Flashloan Bot Arbitrage Finder
 
+## Requirement
+
+You must install `ts-node` and `typescript` modules globally.
+
+Install this modules.
+
+```
+npm install -g typescript ts-node
+```
+
+```
+ts-node --version
+v10.8.1
+
+tsc --version
+Version 4.7.4
+```
+
 ## Usage
 
 1. Rename `.env.example` file to `.env` inside the bot directory
@@ -22,11 +40,11 @@ npm install
 
 - On mainnet
 ```
-node mainnet dai weth
+ts-node mainnet dai weth
 ```
 - On testnet
 ```
-node testnet dai weth
+ts-node testnet dai weth
 ```
 
 
@@ -46,7 +64,7 @@ node testnet dai weth
 - Doing a "short scan" of the "short" lists
 
 ```
-yarn node finder2pairshort
+ts-node finder2pairshort
 ```
 
 - Added 19th June, 22:20.
