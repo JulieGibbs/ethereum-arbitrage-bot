@@ -31,12 +31,12 @@ const getUniswapQuote = async (amountIn, tokenIn, tokenOut, router) => {
  */
 const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
     try {
-        let amountOut = await quoter.methods.quoteExactInputSingle(
+        const amountOut = await quoter.methods.quoteExactInputSingle(
             tokenIn,
             tokenOut,
             3000,
             amountIn.toFixed(),
-            '0'
+            0
         ).call();
         return BN(amountOut);
     }
@@ -53,12 +53,16 @@ const getKyberQuote = async (amountIn, tokenIn, tokenOut, quoter) => {
                 tokenOut: tokenOut,
                 feeUnits: 3000,
                 amountIn: amountIn.toFixed(),
-                limitSqrtP: '0'
+                limitSqrtP: 0
             }
         ).call();
+        // console.log(quoteOut);
+
         return BN(quoteOut.returnedAmount);
     }
     catch (err) {
+        // console.log(err);
+        // process.exit();
         return BN(-Infinity);
     }
 }

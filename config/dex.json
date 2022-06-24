@@ -35,6 +35,11 @@
         "Balancerswap": {
             "id": 11,
             "Vault": "0xBA12222222228d8Ba445958a75a0704d566BF2C8"
+        },
+        "DefiSwap": {
+            "id":"15",
+            "Router": "0xCeB90E4C17d626BE0fACd78b79c9c87d7ca181b3",
+            "Factory": "0x9DEB29c9a4c7A88a3C0257393b7f3335338D9A9D"
         }
     },
     "Kovan": {
