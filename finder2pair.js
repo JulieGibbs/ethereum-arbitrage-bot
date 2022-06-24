@@ -4,14 +4,16 @@ const Web3 = require('web3');
 const colors = require('colors');
 const { Table } = require('console-table-printer');
 const BN = require('bignumber.js');
-const { getUniswapQuote, getUniswapV3Quote, toPrintable } = require('./utils');
+const { getUniswapQuote, getUniswapV3Quote, toPrintable, getKyberQuote, getBalancerQuote } = require('./utils');
 
-const tokens = require('./config/mainnet.json');
+const tokens = require('./config/mainnetshort.json');
 const DEX = require('./config/dex.json');
 
-const un3IQuoter = require('@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json');
+const un3IQuoter = require('@uniswap/v3-periphery/artifacts/contracts/interfaces/IQuoter.sol/IQuoter.json');
 const un2IRouter = require('@uniswap/v2-periphery/build/IUniswapV2Router02.json');
-const shIRouter = require('@shibaswap/core/build/abi/IUniswapV2Router02.json');
+const shIRouter = require('@uniswap/v2-periphery/build/IUniswapV2Router02.json');
+const bsIRouter = require('./config/BalancerVault.json');
+const kyberIQuoter = require('./config/IQuoterV2.json');
 
 /**
  * The network on which the bot runs.
@@ -30,10 +32,11 @@ const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 
-var un3Quoter = new web3.eth.Contract(un3IQuoter.abi, DEX[network].UniswapV3.Quoter);
+const un3Quoter = new web3.eth.Contract(un3IQuoter.abi, DEX[network].UniswapV3.Quoter);
 const un2Router = new web3.eth.Contract(un2IRouter.abi, DEX[network].UniswapV2.Router);
-const shRouter = new web3.eth.Contract(shIRouter, DEX[network].ShibaswapV2.Router);
-
+const shRouter = new web3.eth.Contract(shIRouter.abi, DEX[network].ShibaswapV2.Router);
+const bsRouter = new web3.eth.Contract(bsIRouter.abi, DEX[network].Balancerswap.Vault);
+const kbQuoter = new web3.eth.Contract(kyberIQuoter.abi, DEX[network].Kyberswap.Quoter)
 /**
  * Display of trading and find arbitrage oppotunity.
  * @param {BigNumber} amountIn Input amount of input token.
@@ -45,8 +48,20 @@ const calculateProfit = async (amountIn, tokenPath) => {
     const table = new Table();
     const dexPath = [];
 
-    let amountOut = [], un2AmountOut = [], un3AmountOut = [], suAmountOut = [], shAmountOut = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = amountIn;
+    let amountOut = [],
+        un2AmountOut = [],
+        un3AmountOut = [], 
+        suAmountOut = [], 
+        shAmountOut = [],
+        bsAmountOut = [],
+        kbAmountOut = [];
+    amountOut[0] = 
+    un2AmountOut[0] = 
+    un3AmountOut[0] = 
+    suAmountOut[0] = 
+    shAmountOut[0] = 
+    bsAmountOut[0] =
+    kbAmountOut[0] = amountIn;
 
     const [a, b] = BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
@@ -54,19 +69,39 @@ const calculateProfit = async (amountIn, tokenPath) => {
     for(let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
         
-        [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]] = await Promise.all([
+        [
+            un2AmountOut[i + 1], 
+            un3AmountOut[i + 1], 
+            suAmountOut[i + 1], 
+            shAmountOut[i + 1],
+            bsAmountOut[i + 1],
+            kbAmountOut[i + 1]
+        ] = await Promise.all([
             getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un2Router),
             getUniswapV3Quote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un3Quoter),
             getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un2Router),
-            getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, shRouter)
+            getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, shRouter),
+            getBalancerQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, bsRouter),
+            getKyberQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, kbQuoter)
         ]);
-        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]);
+        // console.log(bsAmountOut[i + 1].div(BN(10).pow(tokens[0].decimals)).toFixed(fixed));
+        // console.log(kbAmountOut[i + 1].div(BN(10).pow(tokens[0].decimals)).toFixed(fixed));
+        amountOut[i + 1] = BN.max(
+            un2AmountOut[i + 1],
+            un3AmountOut[i + 1], 
+            suAmountOut[i + 1], 
+            shAmountOut[i + 1],
+            bsAmountOut[i + 1],
+            kbAmountOut[i + 1]
+        );
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
 
         let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokenPath[next].decimals, fixed);
         let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokenPath[next].decimals, fixed);
         let suAmountPrint = toPrintable(suAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let shAmountPrint = toPrintable(shAmountOut[i + 1], tokenPath[next].decimals, fixed);
+        let bsAmountPrint = toPrintable(bsAmountOut[i + 1], tokenPath[next].decimals, fixed);
+        let kbAmountPrint = toPrintable(kbAmountOut[i + 1], tokenPath[next].decimals, fixed);
 
         if(amountOut[i + 1].eq(un2AmountOut[i + 1])) {
             un2AmountPrint = un2AmountPrint.underline;
@@ -84,6 +119,14 @@ const calculateProfit = async (amountIn, tokenPath) => {
             shAmountPrint = shAmountPrint.underline;
             dexPath.push(DEX[network].ShibaswapV2.id);
         }
+        else if(amountOut[i + 1].eq(kbAmountOut[i + 1])) {
+            kbAmountPrint = kbAmountPrint.underline;
+            dexPath.push(DEX[network].Kyberswap.id);
+        }
+        else if(amountOut[i + 1].eq(bsAmountOut[i + 1])) {
+            bsAmountPrint = bsAmountPrint.underline;
+            dexPath.push(DEX[network].Balancerswap.id);
+        }
         else dexPath.push(0);
 
         table.addRow({
@@ -91,7 +134,9 @@ const calculateProfit = async (amountIn, tokenPath) => {
             'UniSwapV3': `${un3AmountPrint} ${tokenPath[next].symbol}`,
             'UniSwapV2': `${un2AmountPrint} ${tokenPath[next].symbol}`,
             'SushiSwap': `${suAmountPrint} ${tokenPath[next].symbol}`,
-            'ShibaSwap': `${shAmountPrint} ${tokenPath[next].symbol}`
+            'ShibaSwap': `${shAmountPrint} ${tokenPath[next].symbol}`,
+            'Balancer': `${bsAmountPrint} ${tokenPath[next].symbol}`,
+            'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
         });
     }
 
@@ -138,7 +183,7 @@ const main = async () => {
                 path: path.map(t => t.symbol),
                 profit: profit.div(BN(10).pow(path[0].decimals)).toFixed(fixed)
             });
-        };
+        }
     }
 
     fileContent.sort((a, b) => {

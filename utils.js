@@ -1,6 +1,7 @@
 const colors = require('colors');
 const axios = require('axios');
 const BN = require('bignumber.js');
+const tokens = require('./config/mainnet.json');
 
 /**
  * Calculate token price.
@@ -11,11 +12,11 @@ const BN = require('bignumber.js');
  * @returns Output amount of token
  */
 const getUniswapQuote = async (amountIn, tokenIn, tokenOut, router) => {
-    try{
+    try {
         let amountOuts = await router.methods.getAmountsOut(amountIn.toFixed(), [tokenIn, tokenOut]).call();
         return BN(amountOuts[1]);
     }
-    catch(err) {
+    catch (err) {
         return BN(-Infinity);
     }
 }
@@ -29,16 +30,73 @@ const getUniswapQuote = async (amountIn, tokenIn, tokenOut, router) => {
  * @returns Output amount of token
  */
 const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
-    try{
-        return await quoter.methods.quoteExactInputSingle(
+    try {
+        let amountOut = await quoter.methods.quoteExactInputSingle(
             tokenIn,
             tokenOut,
             3000,
             amountIn.toFixed(),
             '0'
         ).call();
+        return BN(amountOut);
     }
-    catch(err) {
+    catch (err) {
+        return BN(-Infinity);
+    }
+}
+
+const getKyberQuote = async (amountIn, tokenIn, tokenOut, quoter) => {
+    try {
+        const quoteOut = await quoter.methods.quoteExactInputSingle(
+            {
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                feeUnits: 3000,
+                amountIn: amountIn.toFixed(),
+                limitSqrtP: '0'
+            }
+        ).call();
+        return BN(quoteOut.returnedAmount);
+    }
+    catch (err) {
+        return BN(-Infinity);
+    }
+}
+
+const getBalancerQuote = async (amountIn, tokenIn, tokenOut, quoter) => {
+    const pool_WETH_USDC = "0x3a19030ed746bd1c3f2b0f996ff9479af04c5f0a000200000000000000000004";
+    const tokenPath = [tokenIn, tokenOut];
+    const swap_steps_struct = [];
+
+    for (var i = 0; i < tokenPath.length - 1; i++) {
+        const swap_struct =
+        {
+            poolId: pool_WETH_USDC,
+            assetInIndex: i,
+            assetOutIndex: i + 1,
+            amount: amountIn.toFixed(),
+            userData: '0x'
+        };
+        swap_steps_struct.push(swap_struct);
+    }
+
+    const fund_struct = {
+        sender: "0xB7Bb04e5D6a6493f79b36d2E9c2D94a26d731b94",
+        fromInternalBalance: false,
+        recipient: "0xB7Bb04e5D6a6493f79b36d2E9c2D94a26d731b94",
+        toInternalBalance: false
+    };
+
+    try {
+        const quoteOut = await quoter.methods.queryBatchSwap(
+            0,
+            swap_steps_struct,
+            tokenPath,
+            fund_struct
+        ).call();
+        return BN(quoteOut[tokenPath.length - 1]);
+    }
+    catch (err) {
         return BN(-Infinity);
     }
 }
@@ -54,11 +112,11 @@ const getUniswapV3Quote = async (amountIn, tokenIn, tokenOut, quoter) => {
  */
 const getPriceFromApi = async (tokenIn, tokenOut, amountIn, version, network) => {
     let networkId = 1;
-    if(network === 'Ropsten') networkId = 3;
-    if(network === 'Rinkeby') networkId = 4;
-    if(network === 'Goerli') networkId = 5;
-    if(network === 'Kovan') networkId = 42;
-    try{
+    if (network === 'Ropsten') networkId = 3;
+    if (network === 'Rinkeby') networkId = 4;
+    if (network === 'Goerli') networkId = 5;
+    if (network === 'Kovan') networkId = 42;
+    try {
         const res = await axios.get('https://api.uniswap.org/v1/quote', {
             headers: {
                 origin: 'https://app.uniswap.org'
@@ -75,17 +133,18 @@ const getPriceFromApi = async (tokenIn, tokenOut, amountIn, version, network) =>
         });
         return BN(res.data.quote);
     }
-    catch(err) {
+    catch (err) {
         return BN(-Infinity);
     }
 }
+
 const getPriceFrom1InchApi = async (tokenIn, tokenOut, amountIn, network) => {
     let chainId = 1;
-    if(network === 'Ropsten') chainId = 3;
-    if(network === 'Rinkeby') chainId = 4;
-    if(network === 'Goerli') chainId = 5;
-    if(network === 'Kovan') chainId = 42;
-    try{
+    if (network === 'Ropsten') chainId = 3;
+    if (network === 'Rinkeby') chainId = 4;
+    if (network === 'Goerli') chainId = 5;
+    if (network === 'Kovan') chainId = 42;
+    try {
         const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/quote`, {
             params: {
                 fromTokenAddress: tokenIn,
@@ -95,11 +154,11 @@ const getPriceFrom1InchApi = async (tokenIn, tokenOut, amountIn, network) => {
         });
         return res.data;
     }
-    catch(err) {
-        console.log(err.message);
+    catch (err) {
         return null;
     }
 }
+
 
 /**
  * Change big number to fixed.
@@ -110,8 +169,8 @@ const getPriceFrom1InchApi = async (tokenIn, tokenOut, amountIn, network) => {
  */
 const toPrintable = (amount, decimal, fixed) => {
     return BN(amount).isFinite()
-    ? BN(amount).div(BN(10).pow(decimal)).toFixed(fixed).yellow
-    : 'N/A'.yellow;
+        ? BN(amount).div(BN(10).pow(decimal)).toFixed(fixed).yellow
+        : 'N/A'.yellow;
 }
 
 module.exports = {
@@ -119,5 +178,7 @@ module.exports = {
     getUniswapV3Quote,
     getPriceFromApi,
     getPriceFrom1InchApi,
+    getKyberQuote,
+    getBalancerQuote,
     toPrintable
 }
