@@ -1,5 +1,5 @@
 {
-    "Mainnet": {
+    "mainnet": {
         "UniswapV2": {
             "id": 2,
             "Router": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
@@ -37,7 +37,7 @@
             "Vault": "0xBA12222222228d8Ba445958a75a0704d566BF2C8"
         }
     },
-    "Kovan": {
+    "kovan": {
         "UniswapV2": {
             "id": 2,
             "Router": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
@@ -56,7 +56,7 @@
         }
         
     },
-    "Binance": {
+    "binance": {
         "Apeswap": {
             "id": 6,
             "Router": "0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7",
@@ -73,7 +73,7 @@
             "Factory": "0x86407bea2078ea5f5eb5a52b2caa963bc1f889da"
         }
     },
-    "Polygon": {
+    "polygon": {
         "Apeswap": {
             "id": 6,
             "Router": "0xC0788A3aD43d79aa53B09c2EaCc313A787d1d607",
