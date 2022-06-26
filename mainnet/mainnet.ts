@@ -78,6 +78,13 @@ const printAccountBalance = async () => {
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
+/**
+ * Calculate dexes quote.
+ * @param amountIn Input amount of token.
+ * @param tokenIn Input token address.
+ * @param tokenOut Output token address.
+ * @returns Array of quotes.
+ */
 const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
     const amountInString = amountIn.toFixed();
@@ -87,10 +94,12 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const su = suRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
     const sh = shRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
 
-    calls.push([un3Quoter.options.address, uni3]);
-    calls.push([un2Router.options.address, uni2]);
-    calls.push([suRouter.options.address, su]);
-    calls.push([shRouter.options.address, sh]);
+    calls.push(
+        [un3Quoter.options.address, uni3],
+        [un2Router.options.address, uni2],
+        [suRouter.options.address, su],
+        [shRouter.options.address, sh]
+    );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
     const uni3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);

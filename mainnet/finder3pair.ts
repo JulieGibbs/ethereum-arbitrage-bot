@@ -4,10 +4,10 @@ import Web3 from 'web3';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getUniswapQuote, getUniswapV3Quote, toPrintable, getKyberQuote, getBalancerQuote } from '../lib/utils';
+import { toPrintable } from '../lib/utils';
 
 // Types
-import { Token, Network, FileContent } from '../lib/types';
+import { Token, Network, FileContent, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 
 import TOKEN from '../config/tokens.json';
@@ -15,10 +15,13 @@ import DEX from '../config/dexs.json';
 
 // ABIs
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
-import un2IRouter from '../abi/IUniswapV2Router02.json';
-import shIRouter from '../abi/IUniswapV2Router02.json';
+import un2IRouter from '../abi/UniswapV2Router02.json';
+import shIRouter from '../abi/UniswapV2Router02.json';
+import dfIRouter from '../abi/UniswapV2Router02.json';
 import bsIRouter from '../abi/BalancerVault.json';
-import kyberIQuoter from '../abi/KyberQuoter.json';
+import kbIQuoter from '../abi/KyberQuoter.json';
+
+import IMulticall from '../abi/UniswapV3Multicall2.json';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -43,8 +46,51 @@ const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 const shRouter = new web3.eth.Contract(shIRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
+const dfRouter = new web3.eth.Contract(dfIRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
 const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
-const kbQuoter = new web3.eth.Contract(kyberIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter)
+const kbQuoter = new web3.eth.Contract(kbIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter);
+
+const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
+
+/**
+ * Calculate dexes quote.
+ * @param amountIn Input amount of token.
+ * @param tokenIn Input token address.
+ * @param tokenOut Output token address.
+ * @returns Array of quotes.
+ */
+ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
+    const calls = [];
+    const amountInString = amountIn.toFixed();
+
+    const uni3 = un3Quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, 3000, amountInString, '0').encodeABI();
+    const uni2 = un2Router.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const su = suRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const sh = shRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const df = dfRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    // const bs = bsRouter.methods.queryBatchSwap();
+    // const kb = kbQuoter.methods.quoteExactInputSingle({ tokenIn, tokenOut, feeUnits: 3000, amountIn: amountInString, limitSqrtP: '0' }).encodeABI();
+    
+    calls.push(
+        [un3Quoter.options.address, uni3],
+        [un2Router.options.address, uni2],
+        [suRouter.options.address, su],
+        [shRouter.options.address, sh],
+        [dfRouter.options.address, df],
+        // [kbQuoter.options.address, kb]
+    );
+
+    const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
+    const uni3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
+    const uni2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
+    const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
+    const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
+    const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
+    const bsQuote = new BN(-Infinity);
+    const kbQuote = new BN(-Infinity);
+
+    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, bsQuote, kbQuote];
+}
 
 /**
  * Calculate and display the best profit path.
@@ -62,6 +108,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         un3AmountOut: BN[] = [],
         suAmountOut: BN[] = [],
         shAmountOut: BN[] = [],
+        dfAmountOut: BN[] = [],
         bsAmountOut: BN[] = [],
         kbAmountOut: BN[] = [];
     amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = bsAmountOut[0] = kbAmountOut[0] = amountIn;
@@ -77,22 +124,17 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             un3AmountOut[i + 1],
             suAmountOut[i + 1],
             shAmountOut[i + 1],
+            dfAmountOut[i + 1],
             bsAmountOut[i + 1],
             kbAmountOut[i + 1]
-        ] = await Promise.all([
-            getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un2Router),
-            getUniswapV3Quote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un3Quoter),
-            getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, suRouter),
-            getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, shRouter),
-            getBalancerQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, bsRouter),
-            getKyberQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, kbQuoter)
-        ]);
+        ] = await getAllQuotes(amountOut[i], tokenPath[i].address, tokenPath[next].address);
 
         amountOut[i + 1] = BN.max(
             un2AmountOut[i + 1],
             un3AmountOut[i + 1],
             suAmountOut[i + 1],
             shAmountOut[i + 1],
+            dfAmountOut[i + 1],
             bsAmountOut[i + 1],
             kbAmountOut[i + 1]
         );
@@ -102,6 +144,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokenPath[next].decimals, fixed);
         let suAmountPrint = toPrintable(suAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let shAmountPrint = toPrintable(shAmountOut[i + 1], tokenPath[next].decimals, fixed);
+        let dfAmountPrint = toPrintable(dfAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let bsAmountPrint = toPrintable(bsAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let kbAmountPrint = toPrintable(kbAmountOut[i + 1], tokenPath[next].decimals, fixed);
 
@@ -121,6 +164,10 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             shAmountPrint = shAmountPrint.underline;
             dexPath.push(DEX[network].ShibaswapV2.id);
         }
+        else if (amountOut[i + 1].eq(dfAmountOut[i + 1])) {
+            dfAmountPrint = dfAmountPrint.underline;
+            dexPath.push(DEX[network].DefiSwap.id);
+        }
         else if (amountOut[i + 1].eq(kbAmountOut[i + 1])) {
             kbAmountPrint = kbAmountPrint.underline;
             dexPath.push(DEX[network].Kyberswap.id);
@@ -137,6 +184,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             'UniSwapV2': `${un2AmountPrint} ${tokenPath[next].symbol}`,
             'SushiSwap': `${suAmountPrint} ${tokenPath[next].symbol}`,
             'ShibaSwap': `${shAmountPrint} ${tokenPath[next].symbol}`,
+            'DefiSwap': `${dfAmountPrint} ${tokenPath[next].symbol}`,
             'Balancer': `${bsAmountPrint} ${tokenPath[next].symbol}`,
             'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
         });
