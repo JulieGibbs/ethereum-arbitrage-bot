@@ -4,10 +4,10 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getUniswapQuote, getUniswapV3Quote, toPrintable } from '../lib/utils';
+import { toPrintable } from '../lib/utils';
 
 // Types
-import { Token, Network } from '../lib/types';
+import { Token, Network, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
@@ -17,8 +17,9 @@ import DEX from '../config/dexs.json';
 // ABIs
 import IContract from '../abi/UniswapFlash-main.json';
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
-import un2IRouter from '../abi/IUniswapV2Router02.json';
-import IERC20 from '../abi/IERC20.json';
+import un2IRouter from '../abi/UniswapV2Router02.json';
+import IMulticall from '../abi/UniswapV3Multicall2.json';
+import IERC20 from '../abi/ERC20.json';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -51,6 +52,8 @@ const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
 
+const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
+
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
 
@@ -73,6 +76,29 @@ const printAccountBalance = async () => {
     table.addRow(row);
     table.printTable();
     console.log('-------------------------------------------------------------------------------------------------------------------');
+}
+
+const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
+    const calls = [];
+    const amountInString = amountIn.toFixed();
+
+    const uni3 = un3Quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, 3000, amountInString, '0').encodeABI();
+    const uni2 = un2Router.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const su = suRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const sh = shRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+
+    calls.push([un3Quoter.options.address, uni3]);
+    calls.push([un2Router.options.address, uni2]);
+    calls.push([suRouter.options.address, su]);
+    calls.push([shRouter.options.address, sh]);
+
+    const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
+    const uni3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
+    const uni2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
+    const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
+    const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
+
+    return [uni3Quote, uni2Quote, suQuote, shQuote];
 }
 
 /**
@@ -144,12 +170,7 @@ const runBot = async (inputAmount: BN) => {
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
 
-        [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]] = await Promise.all([
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router),
-            getUniswapV3Quote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un3Quoter),
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, suRouter),
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, shRouter)
-        ]);
+        [un3AmountOut[i + 1], un2AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]] = await getAllQuotes(amountOut[i], tokens[i].address, tokens[next].address);
         amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]);
         let amountIn = toPrintable(amountOut[i], tokens[i].decimals, fixed);
 
@@ -236,7 +257,9 @@ const main = async () => {
             name: 'input',
             message: `Please input ${tokens[0].symbol} amount:`
         }]);
-        await runBot(new BN(response.input).times(new BN(10).pow(tokens[0].decimals)));
+        let input = parseInt(response.input);
+        if (isNaN(input)) continue;
+        await runBot(new BN(input).times(new BN(10).pow(tokens[0].decimals)));
     }
 }
 
