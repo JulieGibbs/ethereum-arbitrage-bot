@@ -20,7 +20,7 @@ import un3IQuoter from '../abi/UniswapV3IQuoter.json';
 import un2IRouter from '../abi/IUniswapV2Router02.json';
 import IERC20 from '../abi/IERC20.json';
 
-dotenv.config();
+dotenv.config({ path: __dirname + '/../.env' });
 
 /**
  * The network on which the bot runs.
@@ -48,6 +48,7 @@ const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], proc
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
+const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -145,7 +146,7 @@ const runBot = async (inputAmount: BN) => {
         [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]] = await Promise.all([
             getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router),
             getUniswapV3Quote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un3Quoter),
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router)
+            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, suRouter)
         ]);
         amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]);
         let amountIn = toPrintable(amountOut[i], tokens[i].decimals, fixed);

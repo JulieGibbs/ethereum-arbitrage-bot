@@ -21,7 +21,7 @@ import dfIRouter from '../abi/IUniswapV2Router02.json';
 import bsIRouter from '../abi/BalancerVault.json';
 import kyberIQuoter from '../abi/KyberQuoter.json';
 
-dotenv.config();
+dotenv.config({ path: __dirname + '/../.env' });
 
 /**
  * The network on which the bot runs.
@@ -42,6 +42,7 @@ const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
+const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 // const shRouter = new web3.eth.Contract(shIRouter.abi as AbiItem[], DEX[network].ShibaSwap.Router);
 // const dfRouter = new web3.eth.Contract(dfIRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
 // const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
