@@ -10,7 +10,7 @@ import { Token, Network, FileContent } from '../lib/types';
 
 const TOKEN = require('../config/mainnet.json');
 
-dotenv.config();
+dotenv.config({ path: __dirname + '/../.env' });
 
 /**
  * The network on which the bot runs.

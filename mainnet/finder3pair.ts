@@ -20,7 +20,7 @@ import shIRouter from '../abi/IUniswapV2Router02.json';
 import bsIRouter from '../abi/BalancerVault.json';
 import kyberIQuoter from '../abi/KyberQuoter.json';
 
-dotenv.config();
+dotenv.config({ path: __dirname + '/../.env' });
 
 /**
  * The network on which the bot runs.
@@ -41,6 +41,7 @@ const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
+const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 const shRouter = new web3.eth.Contract(shIRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
 const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
 const kbQuoter = new web3.eth.Contract(kyberIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter)
@@ -81,7 +82,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         ] = await Promise.all([
             getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un2Router),
             getUniswapV3Quote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un3Quoter),
-            getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, un2Router),
+            getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, suRouter),
             getUniswapQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, shRouter),
             getBalancerQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, bsRouter),
             getKyberQuote(amountOut[i], tokenPath[i].address, tokenPath[next].address, kbQuoter)
