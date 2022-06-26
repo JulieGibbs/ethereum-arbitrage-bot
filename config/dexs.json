@@ -9,7 +9,8 @@
             "id": 1,
             "Router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
             "Factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
-            "Quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
+            "Quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6",
+            "Multicall2": "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         },
         "SushiswapV2": {
             "id": 3,
