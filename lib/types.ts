@@ -15,3 +15,8 @@ export type FileContent = {
     path: string[]
     profit: string
 }[]
+
+export type Multicall = {
+    success: boolean
+    returnData: string
+}[]
