@@ -92,28 +92,28 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const calls = [];
     const amountInString = amountIn.toFixed();
 
-    const uni3 = un3Quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, 3000, amountInString, '0').encodeABI();
-    const uni2 = un2Router.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const un3 = un3Quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, 3000, amountInString, '0').encodeABI();
+    const un2 = un2Router.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
     const su = suRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
     const sh = shRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
     const df = dfRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
 
     calls.push(
-        [un3Quoter.options.address, uni3],
-        [un2Router.options.address, uni2],
+        [un3Quoter.options.address, un3],
+        [un2Router.options.address, un2],
         [suRouter.options.address, su],
         [shRouter.options.address, sh],
         [dfRouter.options.address, df]
     );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
-    const uni3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
-    const uni2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
+    const un3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
+    const un2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
     const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-
-    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote];
+    console.log(un3Quote.toFixed())
+    return [un3Quote, un2Quote, suQuote, shQuote, dfQuote];
 }
 
 /**
@@ -173,63 +173,59 @@ const initTokenContract = async () => {
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const dexPath: number[] = [];
-    const tokenPath = tokens.map(_token => _token.address);
+    const tokenPath: string[] = tokens.map(_token => _token.address);
     tokenPath.push(tokenPath.shift()!);
 
-    const amountOut: BN[] = [], un2AmountOut: BN[] = [], un3AmountOut: BN[] = [], suAmountOut: BN[] = [], shAmountOut: BN[] = [], dfAmountOut: BN[] = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = dfAmountOut[0] = inputAmount;
+    const maxAmountOut: BN[] = [inputAmount,];
+    const amountOut: BN[][] = [];
 
     const [a, b] = new BN(loanFee).toFraction();
-    const feeAmount = amountOut[0].times(a).idiv(b);
+    const feeAmount = inputAmount.times(a).idiv(b);
 
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
 
-        [un3AmountOut[i + 1], un2AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1], dfAmountOut[i + 1]] = await getAllQuotes(amountOut[i], tokens[i].address, tokens[next].address);
-        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1], dfAmountOut[i + 1]);
-        let amountIn = toPrintable(amountOut[i], tokens[i].decimals, fixed);
+        amountOut[i] = await getAllQuotes(maxAmountOut[i], tokens[i].address, tokens[next].address);
+        maxAmountOut[i + 1] = BN.max(...amountOut[i]);
+        let amountIn: string = toPrintable(maxAmountOut[i], tokens[i].decimals, fixed);
 
-        let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokens[next].decimals, fixed);
-        let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokens[next].decimals, fixed);
-        let suAmountPrint = toPrintable(suAmountOut[i + 1], tokens[next].decimals, fixed);
-        let shAmountPrint = toPrintable(shAmountOut[i + 1], tokens[next].decimals, fixed);
-        let dfAmountPrint = toPrintable(dfAmountOut[i + 1], tokens[next].decimals, fixed);
+        let amountPrint: string[] = amountOut[i].map(out => toPrintable(out, tokens[next].decimals, fixed));
 
-        if (amountOut[i + 1].eq(un2AmountOut[i + 1])) {
-            un2AmountPrint = un2AmountPrint.underline;
+        if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
+            amountPrint[0] = amountPrint[0].underline;
             dexPath.push(DEX[network].UniswapV2.id);
         }
-        else if (amountOut[i + 1].eq(un3AmountOut[i + 1])) {
-            un3AmountPrint = un3AmountPrint.underline;
+        else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
+            amountPrint[1] = amountPrint[1].underline;
             dexPath.push(DEX[network].UniswapV3.id);
         }
-        else if (amountOut[i + 1].eq(suAmountOut[i + 1])) {
-            suAmountPrint = suAmountPrint.underline;
+        else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
+            amountPrint[2] = amountPrint[2].underline;
             dexPath.push(DEX[network].SushiswapV2.id);
         }
-        else if (amountOut[i + 1].eq(shAmountOut[i + 1])) {
-            shAmountPrint = shAmountPrint.underline;
+        else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
+            amountPrint[3] = amountPrint[3].underline;
             dexPath.push(DEX[network].ShibaswapV2.id);
         }
-        else if (amountOut[i + 1].eq(dfAmountOut[i + 1])) {
-            dfAmountPrint = dfAmountPrint.underline;
+        else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
+            amountPrint[4] = amountPrint[4].underline;
             dexPath.push(DEX[network].DefiSwap.id);
         }
         else dexPath.push(0);
 
         table.addRow({
             'Input Token': `${amountIn} ${tokens[i].symbol}`,
-            'UniSwapV3': `${un3AmountPrint} ${tokens[next].symbol}`,
-            'UniSwapV2': `${un2AmountPrint} ${tokens[next].symbol}`,
-            'SushiSwap': `${suAmountPrint} ${tokens[next].symbol}`,
-            'ShibaSwap': `${shAmountPrint} ${tokens[next].symbol}`,
-            'DefiSwap': `${dfAmountPrint} ${tokens[next].symbol}`
+            'UniSwapV3': `${amountPrint[0]} ${tokens[next].symbol}`,
+            'UniSwapV2': `${amountPrint[1]} ${tokens[next].symbol}`,
+            'SushiSwap': `${amountPrint[2]} ${tokens[next].symbol}`,
+            'ShibaSwap': `${amountPrint[3]} ${tokens[next].symbol}`,
+            'DefiSwap': `${amountPrint[4]} ${tokens[next].symbol}`
         });
     }
 
     table.printTable();
 
-    const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
+    const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
     console.log(
         'Input:',
         toPrintable(inputAmount, tokens[0].decimals, fixed),
