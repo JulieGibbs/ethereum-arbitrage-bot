@@ -98,7 +98,7 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
  * @param tokenPath Array of tokens to trade.
  * @returns Return the best profit.
  */
-const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
+ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);
     const table = new Table();
     const dexPath: number[] = [];
@@ -120,8 +120,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         let next = (i + 1) % tokenPath.length;
 
         [
-            un2AmountOut[i + 1],
             un3AmountOut[i + 1],
+            un2AmountOut[i + 1],
             suAmountOut[i + 1],
             shAmountOut[i + 1],
             dfAmountOut[i + 1],
@@ -130,8 +130,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         ] = await getAllQuotes(amountOut[i], tokenPath[i].address, tokenPath[next].address);
 
         amountOut[i + 1] = BN.max(
-            un2AmountOut[i + 1],
             un3AmountOut[i + 1],
+            un2AmountOut[i + 1],
             suAmountOut[i + 1],
             shAmountOut[i + 1],
             dfAmountOut[i + 1],
@@ -140,21 +140,21 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         );
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
 
-        let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokenPath[next].decimals, fixed);
         let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokenPath[next].decimals, fixed);
+        let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokenPath[next].decimals, fixed);
         let suAmountPrint = toPrintable(suAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let shAmountPrint = toPrintable(shAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let dfAmountPrint = toPrintable(dfAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let bsAmountPrint = toPrintable(bsAmountOut[i + 1], tokenPath[next].decimals, fixed);
         let kbAmountPrint = toPrintable(kbAmountOut[i + 1], tokenPath[next].decimals, fixed);
 
-        if (amountOut[i + 1].eq(un2AmountOut[i + 1])) {
-            un2AmountPrint = un2AmountPrint.underline;
-            dexPath.push(DEX[network].UniswapV2.id);
-        }
-        else if (amountOut[i + 1].eq(un3AmountOut[i + 1])) {
+        if (amountOut[i + 1].eq(un3AmountOut[i + 1])) {
             un3AmountPrint = un3AmountPrint.underline;
             dexPath.push(DEX[network].UniswapV3.id);
+        }
+        else if (amountOut[i + 1].eq(un2AmountOut[i + 1])) {
+            un2AmountPrint = un2AmountPrint.underline;
+            dexPath.push(DEX[network].UniswapV2.id);
         }
         else if (amountOut[i + 1].eq(suAmountOut[i + 1])) {
             suAmountPrint = suAmountPrint.underline;
