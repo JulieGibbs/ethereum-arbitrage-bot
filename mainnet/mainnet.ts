@@ -15,9 +15,11 @@ import TOKEN from '../config/mainnet.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
-import IContract from '../abi/UniswapFlash-main.json';
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
 import un2IRouter from '../abi/UniswapV2Router02.json';
+import dfIRouter from '../abi/UniswapV2Router02.json';
+
+import IContract from '../abi/UniswapFlash-main.json';
 import IMulticall from '../abi/UniswapV3Multicall2.json';
 import IERC20 from '../abi/ERC20.json';
 
@@ -51,6 +53,7 @@ const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
+const dfRouter = new web3.eth.Contract(dfIRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
 
 const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
@@ -93,12 +96,14 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const uni2 = un2Router.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
     const su = suRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
     const sh = shRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const df = dfRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
 
     calls.push(
         [un3Quoter.options.address, uni3],
         [un2Router.options.address, uni2],
         [suRouter.options.address, su],
-        [shRouter.options.address, sh]
+        [shRouter.options.address, sh],
+        [dfRouter.options.address, df]
     );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
@@ -106,8 +111,9 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const uni2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
     const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
+    const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
 
-    return [uni3Quote, uni2Quote, suQuote, shQuote];
+    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote];
 }
 
 /**
@@ -170,8 +176,8 @@ const runBot = async (inputAmount: BN) => {
     const tokenPath = tokens.map(_token => _token.address);
     tokenPath.push(tokenPath.shift()!);
 
-    const amountOut: BN[] = [], un2AmountOut: BN[] = [], un3AmountOut: BN[] = [], suAmountOut: BN[] = [], shAmountOut: BN[] = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = inputAmount;
+    const amountOut: BN[] = [], un2AmountOut: BN[] = [], un3AmountOut: BN[] = [], suAmountOut: BN[] = [], shAmountOut: BN[] = [], dfAmountOut: BN[] = [];
+    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = dfAmountOut[0] = inputAmount;
 
     const [a, b] = new BN(loanFee).toFraction();
     const feeAmount = amountOut[0].times(a).idiv(b);
@@ -179,14 +185,15 @@ const runBot = async (inputAmount: BN) => {
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
 
-        [un3AmountOut[i + 1], un2AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]] = await getAllQuotes(amountOut[i], tokens[i].address, tokens[next].address);
-        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1]);
+        [un3AmountOut[i + 1], un2AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1], dfAmountOut[i + 1]] = await getAllQuotes(amountOut[i], tokens[i].address, tokens[next].address);
+        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1], shAmountOut[i + 1], dfAmountOut[i + 1]);
         let amountIn = toPrintable(amountOut[i], tokens[i].decimals, fixed);
 
         let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokens[next].decimals, fixed);
         let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokens[next].decimals, fixed);
         let suAmountPrint = toPrintable(suAmountOut[i + 1], tokens[next].decimals, fixed);
         let shAmountPrint = toPrintable(shAmountOut[i + 1], tokens[next].decimals, fixed);
+        let dfAmountPrint = toPrintable(dfAmountOut[i + 1], tokens[next].decimals, fixed);
 
         if (amountOut[i + 1].eq(un2AmountOut[i + 1])) {
             un2AmountPrint = un2AmountPrint.underline;
@@ -204,6 +211,10 @@ const runBot = async (inputAmount: BN) => {
             shAmountPrint = shAmountPrint.underline;
             dexPath.push(DEX[network].ShibaswapV2.id);
         }
+        else if (amountOut[i + 1].eq(dfAmountOut[i + 1])) {
+            dfAmountPrint = dfAmountPrint.underline;
+            dexPath.push(DEX[network].DefiSwap.id);
+        }
         else dexPath.push(0);
 
         table.addRow({
@@ -211,7 +222,8 @@ const runBot = async (inputAmount: BN) => {
             'UniSwapV3': `${un3AmountPrint} ${tokens[next].symbol}`,
             'UniSwapV2': `${un2AmountPrint} ${tokens[next].symbol}`,
             'SushiSwap': `${suAmountPrint} ${tokens[next].symbol}`,
-            'ShibaSwap': `${shAmountPrint} ${tokens[next].symbol}`
+            'ShibaSwap': `${shAmountPrint} ${tokens[next].symbol}`,
+            'DefiSwap': `${dfAmountPrint} ${tokens[next].symbol}`
         });
     }
 
@@ -266,8 +278,8 @@ const main = async () => {
             name: 'input',
             message: `Please input ${tokens[0].symbol} amount:`
         }]);
-        let input = parseInt(response.input);
-        if (isNaN(input)) continue;
+        let input = parseFloat(response.input);
+        if (isNaN(input) || input <= 0) continue;
         await runBot(new BN(input).times(new BN(10).pow(tokens[0].decimals)));
     }
 }
