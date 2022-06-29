@@ -165,6 +165,29 @@ export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenO
         return null;
     }
 }
+export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network, flashswap: string) => {
+    let chainId = 1;
+    if (network === 'ropsten') chainId = 3;
+    if (network === 'rinkeby') chainId = 4;
+    if (network === 'goerli') chainId = 5;
+    if (network === 'kovan') chainId = 42;
+    try {
+        const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/swap`, {
+            params: {
+                fromTokenAddress: tokenIn,
+                toTokenAddress: tokenOut,
+                amount: amountIn.toFixed(),
+                fromAddress: flashswap,
+                slippage: 1,
+                disableEstimate: true
+            }
+        });
+        return res.data;
+    }
+    catch (err) {
+        return null;
+    }
+}
 
 /**
  * Stringify big number.

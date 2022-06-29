@@ -4,10 +4,10 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getUniswapQuote, getUniswapV3Quote, toPrintable } from '../lib/utils';
+import { getSwapFrom1InchApi, toPrintable } from '../lib/utils';
 
 // Types
-import { Token, Network } from '../lib/types';
+import { Token, Network, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
@@ -15,9 +15,8 @@ import TOKEN from '../config/mainnet.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
-import IContract from '../abi/UniswapFlash-kovan.json';
-import un3IQuoter from '../abi/UniswapV3IQuoter.json';
-import un2IRouter from '../abi/UniswapV2Router02.json';
+import IContract from '../abi/UniswapFlash-main.json';
+import IMulticall from '../abi/UniswapV3Multicall2.json';
 import IERC20 from '../abi/ERC20.json';
 
 dotenv.config({ path: __dirname + '/../.env' });
@@ -25,7 +24,7 @@ dotenv.config({ path: __dirname + '/../.env' });
 /**
  * The network on which the bot runs.
  */
-const network: Network = 'kovan';
+const network: Network = 'mainnet';
 
 /**
  * Initial amount of token.
@@ -45,10 +44,7 @@ const fixed = 4;
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
 const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
-
-const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
-const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
-const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
+const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -74,6 +70,7 @@ const printAccountBalance = async () => {
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
+
 /**
  * Swap tokens on contract.
  * @param loanToken Address of token to loan.
@@ -83,7 +80,7 @@ const printAccountBalance = async () => {
  */
 const callFlashSwap = async (loanToken: string, loanAmount: BN, tradePath: string[], dexPath: number[]) => {
     console.log('Swapping ...');
-    let otherToken = loanToken === TOKEN[network].WETH.address ? TOKEN[network].DAI.address : TOKEN[network].WETH.address;
+    let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
     const init = flashSwapContract.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
@@ -131,55 +128,44 @@ const initTokenContract = async () => {
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const dexPath: number[] = [];
-    const tokenPath = tokens.map(_token => _token.address);
+    const tokenPath: string[] = tokens.map(_token => _token.address);
     tokenPath.push(tokenPath.shift()!);
 
-    const amountOut: BN[] = [], un2AmountOut: BN[] = [], un3AmountOut: BN[] = [], suAmountOut: BN[] = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = inputAmount;
-
+    const maxAmountOut: BN[] = [inputAmount,];
+    const amountOut: BN[] = [];
+    amountOut.push(inputAmount);
     const [a, b] = new BN(loanFee).toFraction();
-    const feeAmount = amountOut[0].times(a).idiv(b);
-
+    const feeAmount = inputAmount.times(a).idiv(b);
+    let gas = 0;
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
+        let res = await getSwapFrom1InchApi(
+            maxAmountOut[i],
+            tokens[i].address,
+            tokens[next].address,
+            network,
+            account
+        );
+        if (res === null) return {};
 
-        [un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]] = await Promise.all([
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un2Router),
-            getUniswapV3Quote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, un3Quoter),
-            getUniswapQuote(amountOut[i], tokenContract[i].options.address, tokenContract[next].options.address, suRouter)
-        ]);
-        amountOut[i + 1] = BN.max(un2AmountOut[i + 1], un3AmountOut[i + 1], suAmountOut[i + 1]);
-        let amountIn = toPrintable(amountOut[i], tokens[i].decimals, fixed);
+        gas += res.estimatedGas;
+        amountOut[i + 1] = new BN(res.toTokenAmount);
+        console.log(amountOut[i + 1].toFixed());
 
-        let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokens[next].decimals, fixed);
-        let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokens[next].decimals, fixed);
-        let suAmountPrint = toPrintable(suAmountOut[i + 1], tokens[next].decimals, fixed);
+        let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
+        let dexName = res.protocols[0][0][0].name;
 
-        if (amountOut[i + 1].eq(un2AmountOut[i + 1])) {
-            un2AmountPrint = un2AmountPrint.underline;
-            dexPath.push(DEX[network].UniswapV2.id);
-        }
-        else if (amountOut[i + 1].eq(un3AmountOut[i + 1])) {
-            un3AmountPrint = un3AmountPrint.underline;
-            dexPath.push(DEX[network].UniswapV3.id);
-        }
-        else if (amountOut[i + 1].eq(suAmountOut[i + 1])) {
-            suAmountPrint = suAmountPrint.underline;
-            dexPath.push(DEX[network].SushiswapV2.id);
-        }
-        else dexPath.push(0);
+        let amountInPrint = toPrintable(amountOut[i], tokens[i].decimals, fixed);
 
         table.addRow({
-            'Input Token': `${amountIn} ${tokens[i].symbol}`,
-            'UniSwapV3': `${un3AmountPrint} ${tokens[next].symbol}`,
-            'UniSwapV2': `${un2AmountPrint} ${tokens[next].symbol}`,
-            'SushiSwap': `${suAmountPrint} ${tokens[next].symbol}`
+            'Input Token': `${amountInPrint} ${tokens[i].symbol}`,
+            [dexName]: `${toAmountPrint} ${tokens[next].symbol}`
         });
     }
 
     table.printTable();
 
-    const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
+    const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
     console.log(
         'Input:',
         toPrintable(inputAmount, tokens[0].decimals, fixed),
@@ -228,7 +214,9 @@ const main = async () => {
             name: 'input',
             message: `Please input ${tokens[0].symbol} amount:`
         }]);
-        await runBot(new BN(response.input).times(new BN(10).pow(tokens[0].decimals)));
+        let input = parseFloat(response.input);
+        if (isNaN(input) || input <= 0) continue;
+        await runBot(new BN(input).times(new BN(10).pow(tokens[0].decimals)));
     }
 }
 
