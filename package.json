@@ -5,7 +5,9 @@
   "main": "bot.js",
   "scripts": {
     "main-finder2": "npx ts-node mainnet/finder2pair",
+    "main-finder2-api": "npx ts-node mainnet/finder2pair_api",
     "main-finder3": "npx ts-node mainnet/finder3pair",
+    "main-finder3-api": "npx ts-node mainnet/finder3pair_api",
     "main-trader": "npx ts-node mainnet/mainnet",
     "test-finder2": "npx ts-node testnet/finder2pair",
     "test-trader": "npx ts-node testnet/testnet"

@@ -216,7 +216,7 @@ const main = async () => {
     const fileContent: FileContent = [];
 
     for (let i in TOKEN[network]) {
-        if (TOKEN[network][i] === TOKEN[network]['WETH']) continue;
+        if (i === 'WETH') continue;
         let input = new BN(1).times(new BN(10).pow(TOKEN[network][i].decimals));
         let path = [TOKEN[network][i], TOKEN[network]['WETH']];
         let { profit } = await calculateProfit(input, path);

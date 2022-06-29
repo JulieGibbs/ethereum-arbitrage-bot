@@ -1,24 +1,6 @@
 # Flashloan Arbitrage Bot
 Flashloan Bot Arbitrage Finder
 
-## Requirement
-
-You must install `ts-node` and `typescript` modules globally.
-
-Install this modules.
-
-```
-npm install -g typescript ts-node
-```
-
-```
-ts-node --version
-v10.8.1
-
-tsc --version
-Version 4.7.4
-```
-
 ## Usage
 
 1. Rename `.env.example` file to `.env` inside the bot directory
@@ -39,22 +21,34 @@ npm install
 4. Run bot
 
 - On mainnet
-    * finder2pair bot
-        ```
-        yarn main-finder2
-        ```
     * trader bot
         ```
         yarn main-trader dai weth
         ```
-- On testnet
     * finder2pair bot
         ```
-        yarn test-finder2
+        yarn main-finder2
         ```
+    * finder3pair bot
+        ```
+        yarn main-finder3
+        ```
+    * finder2pair_api bot
+        ```
+        yarn main-finder2-api
+        ```
+    * finder3pair_api bot
+        ```
+        yarn main-finder3-api
+        ```
+- On testnet
     * trader bot
         ```
         yarn test-trader dai weth
+        ```
+    * finder2pair bot
+        ```
+        yarn test-finder2
         ```
 
 

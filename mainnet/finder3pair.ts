@@ -59,7 +59,7 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
  * @param tokenOut Output token address.
  * @returns Array of quotes.
  */
- const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
+const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
     const amountInString = amountIn.toFixed();
 
@@ -70,7 +70,7 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
     const df = dfRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
     // const bs = bsRouter.methods.queryBatchSwap();
     // const kb = kbQuoter.methods.quoteExactInputSingle({ tokenIn, tokenOut, feeUnits: 3000, amountIn: amountInString, limitSqrtP: '0' }).encodeABI();
-    
+
     calls.push(
         [un3Quoter.options.address, uni3],
         [un2Router.options.address, uni2],
@@ -98,7 +98,7 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
  * @param tokenPath Array of tokens to trade.
  * @returns Return the best profit.
  */
- const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
+const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);
     const table = new Table();
     const dexPath: number[] = [];
@@ -217,7 +217,7 @@ const main = async () => {
 
     for (let i in TOKEN[network]) {
         for (let j in TOKEN[network]) {
-            if (i === j) continue;
+            if (i === 'WETH' || 'WETH' === j || j === i) continue;
             let input = new BN(1).times(new BN(10).pow(TOKEN[network][i].decimals));
             let path = [TOKEN[network][i], TOKEN[network]['WETH'], TOKEN[network][j]];
             let { profit } = await calculateProfit(input, path);
