@@ -1,0 +1,76 @@
+{
+  "contractName": "IMooniSwap",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "src",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "dst",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "minReturn",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "referral",
+          "type": "address"
+        }
+      ],
+      "name": "swap",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "result",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "src",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "dst",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "getReturn",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract IERC20\",\"name\":\"src\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"dst\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"getReturn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract IERC20\",\"name\":\"src\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"dst\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minReturn\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"referral\",\"type\":\"address\"}],\"name\":\"swap\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"result\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/interfaces/IMooniRouter.sol\":\"IMooniSwap\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/interfaces/IERC20.sol\":{\"keccak256\":\"0xfdef1c7743045719f7dc5249c9e0fae762c5d54f1e1b02ebea90b40fd7d90e4d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://56fa896e038b0394a2bc202b21a3504a6a1dc328b2781a9d550d0a13e4b05df3\",\"dweb:/ipfs/QmPzwn7d3TXbHvRa5ndqhr7oh7vdfzdQC4ZT6vCTeU8nxH\"]},\"project:/contracts/interfaces/IMooniRouter.sol\":{\"keccak256\":\"0x490b6eb6d07e8b5e05b65bedf81d9f44a069d323b116700bcd11ee470da016d2\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://67c7e509209ccf5f78676a659f929a3186ed1057e4e02eda9c31c0e72922c478\",\"dweb:/ipfs/Qmb3QjYYYqqgWLCEh4uV3UuD71YunLmSjCo2hNxJ8P3FHH\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x"
+}

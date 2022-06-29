@@ -15,11 +15,11 @@ import DEX from '../config/dexs.json';
 
 // ABIs
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
-import un2IRouter from '../abi/IUniswapV2Router02.json';
-import shIRouter from '../abi/IUniswapV2Router02.json';
-import dfIRouter from '../abi/IUniswapV2Router02.json';
-import bsIRouter from '../abi/BalancerVault.json';
-import kyberIQuoter from '../abi/KyberQuoter.json';
+import un2IRouter from '../abi/UniswapV2Router02.json';
+import shIRouter from '../abi/UniswapV2Router02.json';
+// import dfIRouter from '../abi/UniswapV2Router02.json';
+// import bsIRouter from '../abi/BalancerVault.json';
+// import kyberIQuoter from '../abi/KyberQuoter.json';
 
 dotenv.config({ path: __dirname + '/../.env' });
 

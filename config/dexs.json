@@ -28,10 +28,11 @@
             "Factory": "0x5F1dddbf348aC2fbe22a163e30F99F9ECE3DD50a",
             "Quoter": "0x0D125c15D54cA1F8a813C74A81aEe34ebB508C1f"
         },
-        "Dodoswap": {
-            "id": 9,
+        "DodoV2DVM": {
+            "id": 8,
             "Proxy": "0xa356867fDCEa8e71AEaF87805808803806231FdC",
-            "Factory": "0x72d220cE168C4f361dD4deE5D826a01AD8598f6C"
+            "Factory": "0x72d220cE168C4f361dD4deE5D826a01AD8598f6C",
+            "Approve": "0xCB859eA579b28e02B87A1FDE08d087ab9dbE5149"
         },
         "Balancerswap": {
             "id": 11,
@@ -41,6 +42,10 @@
             "id": 15,
             "Router": "0xCeB90E4C17d626BE0fACd78b79c9c87d7ca181b3",
             "Factory": "0x9DEB29c9a4c7A88a3C0257393b7f3335338D9A9D"
+        },
+        "MooniSwap": {
+            "id": 12,
+            "Factory": "0x71CD6666064C3A1354a3B4dca5fA1E2D3ee7D303"
         }
     },
     "kovan": {

@@ -1,10 +1,8 @@
 import colors from 'colors';
 import axios from 'axios';
 import BN from 'bignumber.js';
-
 import { Contract } from 'web3-eth-contract';
 import { Network } from './types';
-
 /**
  * Get UniswapV2, Sushiswap, Shibaswap quote.
  * @param amountIn Input amount of token.
@@ -17,6 +15,26 @@ export const getUniswapQuote = async (amountIn: BN, tokenIn: string, tokenOut: s
     try {
         let amountOuts = await router.methods.getAmountsOut(amountIn.toFixed(), [tokenIn, tokenOut]).call();
         return new BN(amountOuts[1]);
+    }
+    catch (err) {
+        return new BN(-Infinity);
+    }
+}
+export const getMooniswapQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract) => {
+    try {
+        let amountOut = await quoter.methods.getReturn(tokenIn, tokenOut, amountIn).call();
+        return new BN(amountOut);
+    }
+    catch (err) {
+        return new BN(-Infinity);
+    }
+}
+export const getDodoVMQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract, account: string) => {
+    try {
+        let [amountOut, ] = await quoter.methods.querySellBase(account, amountIn).call();
+        console.log(amountOut);
+
+        return new BN(amountOut);
     }
     catch (err) {
         return new BN(-Infinity);

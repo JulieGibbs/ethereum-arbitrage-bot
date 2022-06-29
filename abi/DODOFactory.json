@@ -1,0 +1,61 @@
+{
+  "contractName": "IDODOFactory",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "baseToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "quoteToken",
+          "type": "address"
+        }
+      ],
+      "name": "getDODOPool",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "pools",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token0",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "token1",
+          "type": "address"
+        }
+      ],
+      "name": "getDODOPoolBidirection",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "baseToken0Pool",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "baseToken1Pool",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"baseToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"quoteToken\",\"type\":\"address\"}],\"name\":\"getDODOPool\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"pools\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token0\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token1\",\"type\":\"address\"}],\"name\":\"getDODOPoolBidirection\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"baseToken0Pool\",\"type\":\"address[]\"},{\"internalType\":\"address[]\",\"name\":\"baseToken1Pool\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/interfaces/IDODO.sol\":\"IDODOFactory\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/interfaces/IDODO.sol\":{\"keccak256\":\"0x6fd5fe5ad801977a683d68c905adef307cbec694a726b37c8d72a37fc92508d4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://9d30ef4a46172e1b34020ca92904e2f50dc7dc494fd561aebc505ea32a1fff0d\",\"dweb:/ipfs/QmczJjMkTM3P4VJkjpCaV34SRQFsT3LcUoBGUZur4YiXLm\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x"
+}
