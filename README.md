@@ -25,6 +25,10 @@ npm install
         ```
         yarn main-trader dai weth
         ```
+    * trader bot for 1inch V4 Router
+        ```
+        yarn main-trader-1inch dai weth
+        ```
     * finder2pair bot
         ```
         yarn main-finder2

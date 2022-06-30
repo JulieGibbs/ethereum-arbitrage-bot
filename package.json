@@ -9,6 +9,7 @@
     "main-finder3": "npx ts-node mainnet/finder3pair",
     "main-finder3-api": "npx ts-node mainnet/finder3pair_api",
     "main-trader": "npx ts-node mainnet/mainnet",
+    "main-trader-1inch": "npx ts-node mainnet/mainnet_1inch",
     "test-finder2": "npx ts-node testnet/finder2pair",
     "test-trader": "npx ts-node testnet/testnet"
   },
