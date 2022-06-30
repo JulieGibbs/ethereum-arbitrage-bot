@@ -81,8 +81,8 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
     const init = flashSwapContract.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
-        oneInchRouters,
         tokenPath,
+        oneInchRouters,
         tradeDatas
     );
     const tx = {
