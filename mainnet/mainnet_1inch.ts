@@ -16,7 +16,6 @@ import DEX from '../config/dexs.json';
 
 // ABIs
 import IContract from '../abi/UniswapFlash-main.json';
-import IMulticall from '../abi/UniswapV3Multicall2.json';
 import IERC20 from '../abi/ERC20.json';
 
 dotenv.config({ path: __dirname + '/../.env' });
@@ -44,7 +43,6 @@ const fixed = 4;
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
 const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
-const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -78,13 +76,12 @@ const printAccountBalance = async () => {
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tradePath: string[], dexPath: number[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, dexPath: number[]) => {
     console.log('Swapping ...');
     let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
     const init = flashSwapContract.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
-        tradePath,
         dexPath
     );
     const tx = {
@@ -131,7 +128,7 @@ const runBot = async (inputAmount: BN) => {
     const tokenPath: string[] = tokens.map(_token => _token.address);
     tokenPath.push(tokenPath.shift()!);
 
-    const maxAmountOut: BN[] = [inputAmount,];
+    // const maxAmountOut: BN[] = [inputAmount,];
     const amountOut: BN[] = [];
     amountOut.push(inputAmount);
     const [a, b] = new BN(loanFee).toFraction();
@@ -140,7 +137,7 @@ const runBot = async (inputAmount: BN) => {
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
         let res = await getSwapFrom1InchApi(
-            maxAmountOut[i],
+            amountOut[i],
             tokens[i].address,
             tokens[next].address,
             network,
@@ -148,7 +145,7 @@ const runBot = async (inputAmount: BN) => {
         );
         if (res === null) return {};
 
-        gas += res.estimatedGas;
+        // gas += res.estimatedGas;
         amountOut[i + 1] = new BN(res.toTokenAmount);
         console.log(amountOut[i + 1].toFixed());
 
@@ -165,7 +162,7 @@ const runBot = async (inputAmount: BN) => {
 
     table.printTable();
 
-    const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
+    const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
     console.log(
         'Input:',
         toPrintable(inputAmount, tokens[0].decimals, fixed),
@@ -182,7 +179,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tokenPath, dexPath);
+        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, dexPath);
     }
 
     console.log();
