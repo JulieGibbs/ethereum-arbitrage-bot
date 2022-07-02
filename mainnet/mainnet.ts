@@ -142,7 +142,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tradePath: strin
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
-        console.log('Completed. Transaction hash:', receipt.transactionHash);
+        console.log(`Transaction hash: https://etherscan.io/tx/${receipt.transactionHash}`);
     }
     catch (err) {
         console.log(err);
