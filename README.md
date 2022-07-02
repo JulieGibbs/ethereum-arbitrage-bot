@@ -50,6 +50,10 @@ npm install
         ```
         yarn test-trader dai weth
         ```
+    * new trader bot
+        ```
+        yarn test-trader-new dai weth
+        ```
     * finder2pair bot
         ```
         yarn test-finder2

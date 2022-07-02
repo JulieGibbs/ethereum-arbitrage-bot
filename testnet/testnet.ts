@@ -11,7 +11,7 @@ import { Token, Network } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
-import TOKEN from '../config/mainnet.json';
+import TOKEN from '../config/tokens.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
@@ -44,7 +44,7 @@ const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
-const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.TESTNET_CONTRACT_ADDRESS);
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
@@ -178,7 +178,8 @@ const runBot = async (inputAmount: BN) => {
     }
 
     table.printTable();
-
+    console.log(tokenPath);
+    console.log(dexPath);
     const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
     console.log(
         'Input:',
@@ -214,11 +215,11 @@ const main = async () => {
     }
     args.forEach(arg => {
         let symbol = arg.toUpperCase();
-        if (!TOKEN[symbol]) {
+        if (!TOKEN[network][symbol]) {
             console.log(`There's no ${symbol} token.`);
             process.exit();
         }
-        tokens.push(TOKEN[symbol]);
+        tokens.push(TOKEN[network][symbol]);
     });
 
     await initTokenContract();

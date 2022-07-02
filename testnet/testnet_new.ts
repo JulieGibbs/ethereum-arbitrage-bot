@@ -4,22 +4,22 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { toPrintable } from '../lib/utils';
-
+import { getUniswapQuote, getUniswapV3Quote, toPrintable } from '../lib/utils';
+import { getPriceOnUniV2, getSwapOnUniv2 } from '../lib/uniswap/v2/getCalldata';
+import { getPriceOnUniV3, getSwapOnUniv3 } from '../lib/uniswap/v3/getCalldata';
 // Types
 import { Token, Network, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
-import TOKEN from '../config/mainnet.json';
+import TOKEN from '../config/tokens.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
+import IContract from '../abi/UniswapFlash1Inch.json';
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
+import un3IRouter from '../abi/UniswapV3Router.json';
 import un2IRouter from '../abi/UniswapV2Router02.json';
-import dfIRouter from '../abi/UniswapV2Router02.json';
-
-import IContract from '../abi/UniswapFlash-main.json';
 import IMulticall from '../abi/UniswapV3Multicall2.json';
 import IERC20 from '../abi/ERC20.json';
 
@@ -28,7 +28,7 @@ dotenv.config({ path: __dirname + '/../.env' });
 /**
  * The network on which the bot runs.
  */
-const network: Network = 'mainnet';
+const network: Network = 'kovan';
 
 /**
  * Initial amount of token.
@@ -47,14 +47,12 @@ const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
-const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FLASHSWAP_ADDRESS);
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
+const un3Router = new web3.eth.Contract(un3IRouter.abi as AbiItem[], DEX[network].UniswapV3.Router);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
-const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
-const dfRouter = new web3.eth.Contract(dfIRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
-
 const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
 const tokens: Token[] = [];
@@ -82,55 +80,24 @@ const printAccountBalance = async () => {
 }
 
 /**
- * Calculate dexes quote.
- * @param amountIn Input amount of token.
- * @param tokenIn Input token address.
- * @param tokenOut Output token address.
- * @returns Array of quotes.
- */
-const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
-    const calls = [];
-    const amountInString = amountIn.toFixed();
-
-    const un3 = un3Quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, 3000, amountInString, '0').encodeABI();
-    const un2 = un2Router.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
-    const su = suRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
-    const sh = shRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
-    const df = dfRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
-
-    calls.push(
-        [un3Quoter.options.address, un3],
-        [un2Router.options.address, un2],
-        [suRouter.options.address, su],
-        [shRouter.options.address, sh],
-        [dfRouter.options.address, df]
-    );
-
-    const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
-    const un3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
-    const un2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
-    const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
-    const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
-    const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-    console.log(un3Quote.toFixed())
-    return [un3Quote, un2Quote, suQuote, shQuote, dfQuote];
-}
-
-/**
  * Swap tokens on contract.
  * @param loanToken Address of token to loan.
  * @param loanAmount Loan amount of token.
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tradePath: string[], dexPath: number[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], routers: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
-    let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
+    // console.log(tokenPath);
+    // console.log(routers);
+    // console.log(tradeDatas);
+    let otherToken = loanToken === TOKEN[network].WETH.address ? TOKEN[network].DAI.address : TOKEN[network].WETH.address;
     const init = flashSwapContract.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
-        tradePath,
-        dexPath
+        tokenPath,
+        routers,
+        tradeDatas
     );
     const tx = {
         from: account,
@@ -148,7 +115,30 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tradePath: strin
         console.log(err);
     }
 }
+const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
+    const calls = [];
+    const amountInString = amountIn.toFixed();
 
+    const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
+    const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
+    const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
+  
+    calls.push(
+        [un3Quoter.options.address, un3],
+        [un2Router.options.address, un2],
+        [suRouter.options.address, su],
+   
+    );
+    const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
+
+    const un3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
+    const un2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
+    const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
+    // const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
+    // const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
+    // console.log(un3Quote.toFixed())
+    return [un3Quote, un2Quote, suQuote];
+}
 /**
  * Initialize token contracts.
  */
@@ -170,12 +160,13 @@ const initTokenContract = async () => {
  * @param inputAmount Start amount of trade.
  * @returns ```[profit, table, dexPath, tokenPath]```
  */
-const runBot = async (inputAmount: BN) => {
+ const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const dexPath: number[] = [];
     const tokenPath: string[] = tokens.map(_token => _token.address);
-    tokenPath.push(tokenPath.shift()!);
-
+    // tokenPath.push(tokenPath.shift()!);
+    const routers: string[] = [];
+    const tradeDatas: string[] = [];
     const maxAmountOut: BN[] = [inputAmount,];
     const amountOut: BN[][] = [];
 
@@ -188,29 +179,35 @@ const runBot = async (inputAmount: BN) => {
         amountOut[i] = await getAllQuotes(maxAmountOut[i], tokens[i].address, tokens[next].address);
         maxAmountOut[i + 1] = BN.max(...amountOut[i]);
         let amountIn: string = toPrintable(maxAmountOut[i], tokens[i].decimals, fixed);
-
         let amountPrint: string[] = amountOut[i].map(out => toPrintable(out, tokens[next].decimals, fixed));
 
         if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
             amountPrint[0] = amountPrint[0].underline;
-            dexPath.push(DEX[network].UniswapV3.id);
+            // dexPath.push(DEX[network].UniswapV2.id);
+            routers.push(DEX[network].UniswapV3.Router);
+            // console.log(maxAmountOut[i].toFixed() + '--->' + maxAmountOut[i + 1].toFixed());
+            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], un3Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             amountPrint[1] = amountPrint[1].underline;
-            dexPath.push(DEX[network].UniswapV2.id);
+            routers.push(DEX[network].UniswapV2.Router);
+            // console.log(maxAmountOut[i].toFixed() + '--->' + maxAmountOut[i + 1].toFixed());
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], un2Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             amountPrint[2] = amountPrint[2].underline;
-            dexPath.push(DEX[network].SushiswapV2.id);
+            routers.push(DEX[network].SushiswapV2.Router);
+            // console.log(maxAmountOut[i].toFixed() + '--->' + maxAmountOut[i + 1].toFixed());
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], suRouter));
         }
-        else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
-            amountPrint[3] = amountPrint[3].underline;
-            dexPath.push(DEX[network].ShibaswapV2.id);
-        }
-        else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
-            amountPrint[4] = amountPrint[4].underline;
-            dexPath.push(DEX[network].DefiSwap.id);
-        }
+        // else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
+        //     amountPrint[3] = amountPrint[3].underline;
+        //     dexPath.push(DEX[network].ShibaswapV2.id);
+        // }
+        // else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
+        //     amountPrint[4] = amountPrint[4].underline;
+        //     dexPath.push(DEX[network].DefiSwap.id);
+        // }
         else dexPath.push(0);
 
         table.addRow({
@@ -218,8 +215,8 @@ const runBot = async (inputAmount: BN) => {
             'UniSwapV3': `${amountPrint[0]} ${tokens[next].symbol}`,
             'UniSwapV2': `${amountPrint[1]} ${tokens[next].symbol}`,
             'SushiSwap': `${amountPrint[2]} ${tokens[next].symbol}`,
-            'ShibaSwap': `${amountPrint[3]} ${tokens[next].symbol}`,
-            'DefiSwap': `${amountPrint[4]} ${tokens[next].symbol}`
+            // 'ShibaSwap': `${amountPrint[3]} ${tokens[next].symbol}`,
+            // 'DefiSwap': `${amountPrint[4]} ${tokens[next].symbol}`
         });
     }
 
@@ -242,7 +239,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tokenPath, dexPath);
+        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tokenPath, routers, tradeDatas);
     }
 
     console.log();
@@ -260,11 +257,11 @@ const main = async () => {
     }
     args.forEach(arg => {
         let symbol = arg.toUpperCase();
-        if (!TOKEN[symbol]) {
+        if (!TOKEN[network][symbol]) {
             console.log(`There's no ${symbol} token.`);
             process.exit();
         }
-        tokens.push(TOKEN[symbol]);
+        tokens.push(TOKEN[network][symbol]);
     });
 
     await initTokenContract();
@@ -274,9 +271,7 @@ const main = async () => {
             name: 'input',
             message: `Please input ${tokens[0].symbol} amount:`
         }]);
-        let input = parseFloat(response.input);
-        if (isNaN(input) || input <= 0) continue;
-        await runBot(new BN(input).times(new BN(10).pow(tokens[0].decimals)));
+        await runBot(new BN(response.input).times(new BN(10).pow(tokens[0].decimals)));
     }
 }
 

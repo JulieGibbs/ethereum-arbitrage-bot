@@ -19,7 +19,7 @@ import un2IRouter from '../abi/UniswapV2Router02.json';
 import shIRouter from '../abi/UniswapV2Router02.json';
 import dfIRouter from '../abi/UniswapV2Router02.json';
 import bsIRouter from '../abi/BalancerVault.json';
-import kbIQuoter from '../abi/KyberQuoter.json';
+// import kbIQuoter from '../abi/KyberQuoter.json';
 
 import IMulticall from '../abi/UniswapV3Multicall2.json';
 
@@ -48,7 +48,7 @@ const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network]
 const shRouter = new web3.eth.Contract(shIRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
 const dfRouter = new web3.eth.Contract(dfIRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
 const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
-const kbQuoter = new web3.eth.Contract(kbIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter);
+// const kbQuoter = new web3.eth.Contract(kbIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter);
 
 const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 

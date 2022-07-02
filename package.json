@@ -11,7 +11,8 @@
     "main-trader": "npx ts-node mainnet/mainnet",
     "main-trader-1inch": "npx ts-node mainnet/mainnet_1inch",
     "test-finder2": "npx ts-node testnet/finder2pair",
-    "test-trader": "npx ts-node testnet/testnet"
+    "test-trader": "npx ts-node testnet/testnet",
+    "test-trader-new": "npx ts-node testnet/testnet_new"
   },
   "keywords": [
     "arbitrage",

@@ -157,6 +157,8 @@ const runBot = async (inputAmount: BN) => {
             // 'Estimate Gas': `${gas} Gwei`
         });
     }
+    // console.log(oneInchRouters);
+    // console.log(tradeDatas);
     // table.addRow({'Estimate Gas': `${gas} Gwei`})
     table.printTable();
 
