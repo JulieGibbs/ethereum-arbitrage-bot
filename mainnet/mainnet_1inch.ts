@@ -63,7 +63,7 @@ const printAccountBalance = async () => {
     });
     table.addRow(row);
     table.printTable();
-    const maxAmount = await maxFlashamount();
+    const [, maxAmount] = await maxFlashamount();
     console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
@@ -71,8 +71,9 @@ const printAccountBalance = async () => {
 const maxFlashamount = async () => {
     try {
         const flashPool = await flashFactory.methods.getPool(tokens[0].address, TOKEN['WETH'].address, 500).call();
-        const maxAmount = await tokenContract[0].methods.balanceOf(flashPool).call();
-        return maxAmount !== null ? new BN(maxAmount) : 0;
+        const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
+        const maxAmount = balance ? new BN(balance) : new BN(0);
+        return [maxAmount, toPrintable(maxAmount, tokens[0].decimals, fixed)];
     } catch (err){
         console.log(err);
         console.log('Flash pool is not exist!');
