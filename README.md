@@ -7,10 +7,11 @@ Flashloan Bot Arbitrage Finder
  
 2. Config `.env` file. 
 
-    Here, you need three things. 
+    Here, you need four things. 
     * Insert your INFURA Project ID. You can create a infura Project ID [here](https://infura.io). 
     * Insert your MetaMask (Kovan Testnet) 32byte wallet private key.
-
+    * Insert your cotract address(mainnet or kovan)
+    * Insert UniswapV3 Factory address. 
 
 3. Install node modules. Open terminal window and run:
 

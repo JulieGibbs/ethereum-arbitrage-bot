@@ -8,7 +8,7 @@ import { getPriceFrom1InchApi, toPrintable } from '../lib/utils';
 // Types
 import { Token, Network, FileContent } from '../lib/types';
 
-const TOKEN = require('../config/mainnet.json');
+const TOKEN = require('../config/super_short.json');
 
 dotenv.config({ path: __dirname + '/../.env' });
 

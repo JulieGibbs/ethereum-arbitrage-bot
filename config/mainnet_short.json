@@ -1,4 +1,10 @@
 {
+    "1INCH": {
+        "address": "0x111111111117dC0aa78b770fA6A738034120C302",
+        "name": "1inch",
+        "symbol": "1INCH",
+        "decimals": 18
+    },
     "AAVE": {
         "address": "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9",
         "name": "Aave",
@@ -117,6 +123,12 @@
         "address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
         "name": "Synth sUSD",
         "symbol": "sUSD",
+        "decimals": 18
+    },
+    "SUSHI": {
+        "address": "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2",
+        "name": "Sushi",
+        "symbol": "SUSHI",
         "decimals": 18
     },
     "UNI": {
