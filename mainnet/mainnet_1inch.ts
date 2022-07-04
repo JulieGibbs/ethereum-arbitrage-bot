@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
 import { getSwapFrom1InchApi, toPrintable } from '../lib/utils';
-
+import { getFlashBalanceOnUniV3 } from '../lib/uniswap/v3/getCalldata';
 // Types
 import { Token, Network, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
@@ -17,7 +17,7 @@ import DEX from '../config/dexs.json';
 // ABIs
 import IContract from '../abi/UniswapFlash1Inch.json';
 import IERC20 from '../abi/ERC20.json';
-import IRouter from '../abi/AggregationRouterV4.json';
+import IUniV3Factory from '../abi/UniswapV3Factory.json';
 dotenv.config({ path: __dirname + '/../.env' });
 
 /**
@@ -43,9 +43,9 @@ const fixed = 4;
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
 const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
-
 /**
  * Print balance of wallet.
  */
@@ -61,13 +61,23 @@ const printAccountBalance = async () => {
     balances.forEach((bal, i) => {
         row[tokens[i].symbol] = toPrintable(new BN(bal), tokens[i].decimals, fixed);
     });
-
     table.addRow(row);
     table.printTable();
+    const maxAmount = await maxFlashamount();
+    console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
-
+const maxFlashamount = async () => {
+    try {
+        const flashPool = await flashFactory.methods.getPool(tokens[0].address, TOKEN['WETH'].address, 500).call();
+        const maxAmount = await tokenContract[0].methods.balanceOf(flashPool).call();
+        return maxAmount !== null ? new BN(maxAmount) : 0;
+    } catch (err){
+        console.log(err);
+        console.log('Flash pool is not exist!');
+    }
+}
 /**
  * Swap tokens on contract.
  * @param loanToken Address of token to loan.
