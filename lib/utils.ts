@@ -165,6 +165,16 @@ export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenO
         return null;
     }
 }
+
+/**
+ * Get dex path and quote.
+ * @param amountIn Input amount of token.
+ * @param tokenIn Input token address.
+ * @param tokenOut Output token address.
+ * @param network Network name.
+ * @param flashswap FlashSwap address.
+ * @returns Best dex path and quote.
+ */
 export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network, flashswap: string) => {
     let chainId = 1;
     if (network === 'ropsten') chainId = 3;
