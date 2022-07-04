@@ -42,7 +42,7 @@ const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
-const flashSwapContract = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
 
@@ -78,7 +78,7 @@ const printAccountBalance = async () => {
 const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], oneInchRouters: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
     let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
-    const init = flashSwapContract.methods.initUniFlashSwap(
+    const init = flashSwap.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
         tokenPath,
@@ -87,7 +87,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
     );
     const tx = {
         from: account,
-        to: flashSwapContract.options.address,
+        to: flashSwap.options.address,
         gas: 2000000,
         data: init.encodeABI()
     };
@@ -140,7 +140,7 @@ const runBot = async (inputAmount: BN) => {
             tokens[i].address,
             tokens[next].address,
             network,
-            account
+            flashSwap.options.address
         );
         if (res === null) return {};
         gas = new BN(res.tx.gas).times(res.tx.gasPrice);
