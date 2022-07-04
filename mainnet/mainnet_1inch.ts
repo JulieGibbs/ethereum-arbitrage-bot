@@ -64,7 +64,8 @@ const printAccountBalance = async () => {
     table.addRow(row);
     table.printTable();
     const [, maxAmount] = await maxFlashamount();
-    console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
+    if (maxAmount !== undefined)
+        console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
