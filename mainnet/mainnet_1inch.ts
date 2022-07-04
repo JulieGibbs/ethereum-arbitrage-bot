@@ -69,8 +69,10 @@ const printAccountBalance = async () => {
 }
 
 const maxFlashamount = async () => {
+    let otherToken = tokens[0].address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
+
     try {
-        const flashPool = await flashFactory.methods.getPool(tokens[0].address, TOKEN['WETH'].address, 500).call();
+        const flashPool = await flashFactory.methods.getPool(tokens[0].address, otherToken, 500).call();
         const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
         return [maxAmount, toPrintable(maxAmount, tokens[0].decimals, fixed)];
