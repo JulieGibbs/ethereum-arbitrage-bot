@@ -75,7 +75,7 @@ const maxFlashamount = async () => {
         const maxAmount = balance ? new BN(balance) : new BN(0);
         return [maxAmount, toPrintable(maxAmount, tokens[0].decimals, fixed)];
     } catch (err){
-        console.log(err);
+        // console.log(err);
         console.log('Flash pool is not exist!');
     }
 }
