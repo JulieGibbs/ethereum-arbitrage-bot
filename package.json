@@ -4,15 +4,15 @@
   "description": "Flashloan Bot Arbitrage Finder",
   "main": "bot.js",
   "scripts": {
-    "main-finder2": "npx ts-node mainnet/finder2pair",
-    "main-finder2-api": "npx ts-node mainnet/finder2pair_api",
-    "main-finder3": "npx ts-node mainnet/finder3pair",
-    "main-finder3-api": "npx ts-node mainnet/finder3pair_api",
-    "main-trader": "npx ts-node mainnet/mainnet",
-    "main-trader-1inch": "npx ts-node mainnet/mainnet_1inch",
-    "test-finder2": "npx ts-node testnet/finder2pair",
-    "test-trader": "npx ts-node testnet/testnet",
-    "test-trader-new": "npx ts-node testnet/testnet_new"
+    "main-finder2": "ts-node mainnet/finder2pair",
+    "main-finder2-api": "ts-node mainnet/finder2pair_api",
+    "main-finder3": "ts-node mainnet/finder3pair",
+    "main-finder3-api": "ts-node mainnet/finder3pair_api",
+    "main-trader": "ts-node mainnet/mainnet",
+    "main-trader-1inch": "ts-node mainnet/mainnet_1inch",
+    "test-finder2": "ts-node testnet/finder2pair",
+    "test-trader": "ts-node testnet/testnet",
+    "test-trader-new": "ts-node testnet/testnet_new"
   },
   "keywords": [
     "arbitrage",
@@ -30,5 +30,8 @@
     "dotenv": "^16.0.1",
     "inquirer": "^8.2.4",
     "web3": "^1.7.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.8.2"
   }
 }
