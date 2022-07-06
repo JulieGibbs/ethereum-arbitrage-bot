@@ -1,16 +1,21 @@
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { config as dotEnvConfig } from "dotenv";
+
 dotEnvConfig();
+
 const recipient = process.env.FLASHSWAP_ADDRESS || '';
+
 export const getPriceOnUniV3 = (amountIn: BN, tokenIn: string, tokenOut: string, router: Contract) => {
     const encoded = router.methods.quoteExactInputSingle(tokenIn, tokenOut, 3000, amountIn.toFixed(), '0').encodeABI();
     return encoded;
 };
+
 export const getFlashBalanceOnUniV3 = (tokenIn: string, tokenOut: string, fee: number, factory: Contract) => {
     const encoded = factory.methods.getPool(tokenIn, tokenOut, 500).encodeABI();
     return encoded;
 };
+
 export const getSwapOnUniv3 = (amountIn: BN, amountOutMin: BN, path: string[], router: Contract) => {
     const deadline = 300;
     const param = {

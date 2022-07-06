@@ -5,14 +5,13 @@ import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
 import { getSwapFrom1InchApi, toPrintable } from '../lib/utils';
-import { getFlashBalanceOnUniV3 } from '../lib/uniswap/v3/getCalldata';
+
 // Types
 import { Token, Network, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
 import TOKEN from '../config/mainnet.json';
-import DEX from '../config/dexs.json';
 
 // ABIs
 import IContract from '../abi/UniswapFlash1Inch.json';
@@ -46,6 +45,7 @@ const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
+
 /**
  * Print balance of wallet.
  */
@@ -64,11 +64,15 @@ const printAccountBalance = async () => {
     table.addRow(row);
     table.printTable();
     const maxAmount = await maxFlashamount();
-    if (maxAmount !== undefined)
+    if (maxAmount !== null)
         console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
+/**
+ * Get maximum loanable amount from pool.
+ * @returns Max loanable amount.
+ */
 const maxFlashamount = async () => {
     let otherToken = tokens[0].address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
 
@@ -79,9 +83,10 @@ const maxFlashamount = async () => {
         return toPrintable(maxAmount, tokens[0].decimals, fixed);
     } catch (err){
         console.log('Flash pool is not exist!');
-        // return {};
+        return null;
     }
 }
+
 /**
  * Swap tokens on contract.
  * @param loanToken Address of token to loan.
