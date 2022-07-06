@@ -63,7 +63,7 @@ const printAccountBalance = async () => {
     });
     table.addRow(row);
     table.printTable();
-    const [, maxAmount] = await maxFlashamount();
+    const maxAmount = await maxFlashamount();
     if (maxAmount !== undefined)
         console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
@@ -76,10 +76,10 @@ const maxFlashamount = async () => {
         const flashPool = await flashFactory.methods.getPool(tokens[0].address, otherToken, 500).call();
         const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
-        return [maxAmount, toPrintable(maxAmount, tokens[0].decimals, fixed)];
+        return toPrintable(maxAmount, tokens[0].decimals, fixed);
     } catch (err){
-        // console.log(err);
         console.log('Flash pool is not exist!');
+        // return {};
     }
 }
 /**
@@ -89,19 +89,25 @@ const maxFlashamount = async () => {
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], oneInchRouters: string[], tradeDatas: string[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], routers: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
+    if (tokenPath.length != routers.length || tokenPath.length != tradeDatas.length) {
+        console.log('Swap data is not correct!')
+        return {};
+    }
     let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
     const init = flashSwap.methods.initUniFlashSwap(
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
         tokenPath,
-        oneInchRouters,
+        routers,
         tradeDatas
     );
+    const nonce = await web3.eth.getTransactionCount(account);
     const tx = {
         from: account,
         to: flashSwap.options.address,
+        nonce: nonce,
         gas: 2000000,
         data: init.encodeABI()
     };
@@ -193,7 +199,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tokenPath, oneInchRouters, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, oneInchRouters, tradeDatas);
     }
 
     console.log();
