@@ -122,11 +122,10 @@ const checkApproval = async () => {
     );
     const results: string[] = await Promise.all(promises);
 
-    const minAmount = new BN('0xffffffffffffffffffffffff');
+    const minAmount = new BN('0xfffffffffffffffffffffff');
     const _token: Token[] = [];
     tokens.forEach((token, i) => {
         let result = new BN(results[i]);
-        console.log(result.toFixed());
         if (result.lt(minAmount)) {
             console.log(`Allowance of ${token.symbol.yellow} is not enough!`);
             _token.push(token);
