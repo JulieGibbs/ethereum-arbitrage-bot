@@ -3,6 +3,7 @@ import axios from 'axios';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { Network } from './types';
+
 /**
  * Get UniswapV2, Sushiswap, Shibaswap quote.
  * @param amountIn Input amount of token.
@@ -31,7 +32,7 @@ export const getMooniswapQuote = async (amountIn: BN, tokenIn: string, tokenOut:
 }
 export const getDodoVMQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract, account: string) => {
     try {
-        let [amountOut, ] = await quoter.methods.querySellBase(account, amountIn).call();
+        let [amountOut,] = await quoter.methods.querySellBase(account, amountIn).call();
         console.log(amountOut);
 
         return new BN(amountOut);
