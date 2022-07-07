@@ -53,6 +53,7 @@ const printAccountBalance = async () => {
     const table = new Table();
     const row = { 'Token': 'Balance' };
 
+    console.log(account);
     let ethBalance = await web3.eth.getBalance(account);
     row['ETH'] = toPrintable(new BN(ethBalance), 18, fixed);
 
@@ -81,10 +82,68 @@ const maxFlashamount = async () => {
         const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
         return toPrintable(maxAmount, tokens[0].decimals, fixed);
-    } catch (err){
+    } catch (err) {
         console.log('Flash pool is not exist!');
         return null;
     }
+}
+
+/**
+ * Call appoveToken function of flashswap contract.
+ * @param flashswap Flashswap contract.
+ * @param token Token to approve
+ */
+const approveToken = async (flashswap: Contract, token: Token) => {
+    const method = flashswap.methods.approveToken(token.address);
+    const encoded = method.encodeABI();
+
+    const tx = {
+        from: account,
+        to: flashSwap.options.address,
+        gas: 80000,
+        data: encoded
+    };
+    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
+
+    const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+    console.log(`Transaction hash: ${receipt.transactionHash}`);
+}
+
+/**
+ * Check if 1inch router is approved to use asset of flashswap.
+ */
+const checkApproval = async () => {
+    console.log('Checking allowance...');
+    const promises = tokenContract.map(
+        contract => contract.methods.allowance(
+            process.env.MAINNET_CONTRACT_ADDRESS,
+            process.env.ONEINCH_ROUTER_ADDRESS
+        ).call()
+    );
+    const results: string[] = await Promise.all(promises);
+
+    const minAmount = new BN('0xffffffffffffffffffffffff');
+    const _token: Token[] = [];
+    tokens.forEach((token, i) => {
+        let result = new BN(results[i]);
+        console.log(result.toFixed());
+        if (result.lt(minAmount)) {
+            console.log(`Allowance of ${token.symbol.yellow} is not enough!`);
+            _token.push(token);
+        }
+    });
+
+    if (!_token.length) return;
+
+    let response = await inquirer.prompt([{
+        type: 'input',
+        name: 'isExe',
+        message: `Would you like to approve token? (yes/no)`
+    }]);
+
+    if (response.isExe !== 'yes') process.exit();
+
+    for (let i = 0; i < _token.length; i++) await approveToken(flashSwap, _token[i]);
 }
 
 /**
@@ -94,9 +153,9 @@ const maxFlashamount = async () => {
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], routers: string[], tradeDatas: string[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
-    if (tokenPath.length != routers.length || tokenPath.length != tradeDatas.length) {
+    if (tokenPath.length != tradeDatas.length) {
         console.log('Swap data is not correct!')
         return {};
     }
@@ -105,7 +164,6 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         [loanToken, otherToken],
         [loanAmount.toFixed(), '0'],
         tokenPath,
-        routers,
         tradeDatas
     );
     const nonce = await web3.eth.getTransactionCount(account);
@@ -113,14 +171,14 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         from: account,
         to: flashSwap.options.address,
         nonce: nonce,
-        gas: 2000000,
+        gas: 200000,
         data: init.encodeABI()
     };
     const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
-        console.log(`Transaction hash: https://etherscan.io/tx/${receipt.transactionHash}`);
+        console.log(`Transaction hash: ${receipt.transactionHash}`);
     }
     catch (err) {
         console.log(err);
@@ -151,7 +209,6 @@ const initTokenContract = async () => {
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const tokenPath: string[] = tokens.map(_token => _token.address);
-    const oneInchRouters: string[] = [];
     const tradeDatas: string[] = [];
     const amountOut: BN[] = [];
     amountOut.push(inputAmount);
@@ -171,7 +228,6 @@ const runBot = async (inputAmount: BN) => {
         gas = new BN(res.tx.gas).times(res.tx.gasPrice);
         amountOut[i + 1] = new BN(res.toTokenAmount);
         let dexName = res.protocols[0][0][0].name;
-        oneInchRouters.push(res.tx.to);
         tradeDatas.push(res.tx.data);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
         let amountInPrint = toPrintable(amountOut[i], tokens[i].decimals, fixed);
@@ -204,7 +260,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, oneInchRouters, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, tradeDatas);
     }
 
     console.log();
@@ -230,6 +286,7 @@ const main = async () => {
     });
 
     await initTokenContract();
+    await checkApproval();
     while (true) {
         let response = await inquirer.prompt([{
             type: 'input',
