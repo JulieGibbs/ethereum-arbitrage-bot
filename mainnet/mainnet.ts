@@ -49,7 +49,7 @@ const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FLASHSWAP_ADDRESS);
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
@@ -218,27 +218,27 @@ const runBot = async (inputAmount: BN) => {
         if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
             amountPrint[0] = amountPrint[0].underline;
             routers.push(un3Router.options.address);
-            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], un3Router));
+            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, un3Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             amountPrint[1] = amountPrint[1].underline;
             routers.push(un2Router.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], un2Router));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             amountPrint[2] = amountPrint[2].underline;
             routers.push(suRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], suRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
             amountPrint[3] = amountPrint[3].underline;
             routers.push(shRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], shRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             amountPrint[4] = amountPrint[4].underline;
             routers.push(dfRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], dfRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
         }
         
         table.addRow({
