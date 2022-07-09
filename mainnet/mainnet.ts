@@ -131,7 +131,10 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
+<<<<<<< HEAD
     // console.log(un3Quote.toFixed())
+=======
+>>>>>>> c9869b883e4f51980518499c7d2fb54824fa6d4c
     return [un3Quote, un2Quote, suQuote, shQuote, dfQuote];
 }
 

@@ -31,5 +31,8 @@
     "ganache-cli": "^6.12.2",
     "inquirer": "^8.2.4",
     "web3": "^1.7.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.8.2"
   }
 }
