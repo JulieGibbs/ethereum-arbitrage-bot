@@ -9,10 +9,10 @@
     "main-finder3": "npx ts-node mainnet/finder3pair",
     "main-finder3-api": "npx ts-node mainnet/finder3pair_api",
     "main-trader": "npx ts-node mainnet/mainnet",
-    "main-trader-1inch": "npx ts-node mainnet/mainnet_1inch",
+    "main-trader-one": "npx ts-node mainnet/mainnet_one",
     "test-finder2": "npx ts-node testnet/finder2pair",
-    "test-trader": "npx ts-node testnet/testnet",
-    "test-trader-new": "npx ts-node testnet/testnet_new"
+    "test-trader": "npx ts-node testnet/trader",
+    "test-trader-one": "npx ts-node testnet/trader_one"
   },
   "keywords": [
     "arbitrage",
@@ -28,6 +28,7 @@
     "colors": "^1.4.0",
     "console-table-printer": "^2.11.0",
     "dotenv": "^16.0.1",
+    "ganache-cli": "^6.12.2",
     "inquirer": "^8.2.4",
     "web3": "^1.7.3"
   }

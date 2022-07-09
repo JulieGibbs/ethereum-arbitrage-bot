@@ -29,7 +29,7 @@ const network: Network = 'mainnet';
  * Initial amount of token.
  */
 // const initial = 1;
-
+let maxInputAmount;
 /**
  * Flashloan fee.
  */
@@ -63,9 +63,9 @@ const printAccountBalance = async () => {
     });
     table.addRow(row);
     table.printTable();
-    const maxAmount = await maxFlashamount();
-    if (maxAmount !== undefined)
-        console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
+    maxInputAmount = await maxFlashamount();
+    if (maxInputAmount !== undefined)
+        console.log(`Max flash loan amount of ${tokens[0].symbol} is ${toPrintable(maxInputAmount, tokens[0].decimals, fixed)}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
@@ -76,7 +76,7 @@ const maxFlashamount = async () => {
         const flashPool = await flashFactory.methods.getPool(tokens[0].address, otherToken, 500).call();
         const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
-        return toPrintable(maxAmount, tokens[0].decimals, fixed);
+        return maxAmount;
     } catch (err){
         console.log('Flash pool is not exist!');
         // return {};
@@ -95,10 +95,11 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         console.log('Swap data is not correct!')
         return {};
     }
-    let otherToken = loanToken === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
+    const loanTokens = loanToken === TOKEN.WETH.address ? [TOKEN.DAI.address, loanToken] : [loanToken, TOKEN.WETH.address];
+    const loanAmounts = loanToken === TOKEN.WETH.address ? ['0', loanAmount.toFixed()] : [loanAmount.toFixed(), '0']
     const init = flashSwap.methods.initUniFlashSwap(
-        [loanToken, otherToken],
-        [loanAmount.toFixed(), '0'],
+        loanTokens,
+        loanAmounts,
         tokenPath,
         routers,
         tradeDatas
@@ -177,8 +178,10 @@ const runBot = async (inputAmount: BN) => {
             // 'Estimate Gas': `${gas} Gwei`
         });
     }
-    // console.log(oneInchRouters);
-    // console.log(tradeDatas);
+    console.log(tokenPath);
+    console.log([inputAmount.toFixed(), '0']);
+    console.log(oneInchRouters);
+    console.log(tradeDatas);
     // table.addRow({'Estimate Gas': `${gas} Gwei`})
     table.printTable();
 
@@ -233,6 +236,10 @@ const main = async () => {
         }]);
         let input = parseFloat(response.input);
         if (isNaN(input) || input <= 0) continue;
+        if (new BN(input).gt(maxInputAmount)) {
+            console.log("Input exceed Max Loan Amount!".red);
+            continue;
+        }
         await runBot(new BN(input).times(new BN(10).pow(tokens[0].decimals)));
     }
 }
