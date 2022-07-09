@@ -10,7 +10,7 @@ import { toPrintable } from '../lib/utils';
 import { Token, Network, FileContent, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 
-import TOKEN from '../config/tokens.json';
+import TOKEN from '../config/super_short.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
@@ -215,11 +215,11 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 const main = async () => {
     const fileContent: FileContent = [];
 
-    for (let i in TOKEN[network]) {
-        for (let j in TOKEN[network]) {
+    for (let i in TOKEN) {
+        for (let j in TOKEN) {
             if (i === 'WETH' || 'WETH' === j || j === i) continue;
-            let input = new BN(1).times(new BN(10).pow(TOKEN[network][i].decimals));
-            let path = [TOKEN[network][i], TOKEN[network]['WETH'], TOKEN[network][j]];
+            let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
+            let path = [TOKEN[i], TOKEN['WETH'], TOKEN[j]];
             let { profit } = await calculateProfit(input, path);
             if (profit.gt(0)) {
                 fileContent.push({
