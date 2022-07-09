@@ -64,15 +64,9 @@ const printAccountBalance = async () => {
     });
     table.addRow(row);
     table.printTable();
-<<<<<<< HEAD:mainnet/mainnet_one.ts
     maxInputAmount = await maxFlashamount();
     if (maxInputAmount !== undefined)
         console.log(`Max flash loan amount of ${tokens[0].symbol} is ${toPrintable(maxInputAmount, tokens[0].decimals, fixed)}`)
-=======
-    const maxAmount = await maxFlashamount();
-    if (maxAmount !== null)
-        console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxAmount}`)
->>>>>>> c9869b883e4f51980518499c7d2fb54824fa6d4c:mainnet/mainnet_1inch.ts
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
@@ -87,13 +81,8 @@ const maxFlashamount = async () => {
         const flashPool = await flashFactory.methods.getPool(tokens[0].address, otherToken, 500).call();
         const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
-<<<<<<< HEAD:mainnet/mainnet_one.ts
         return maxAmount;
     } catch (err){
-=======
-        return toPrintable(maxAmount, tokens[0].decimals, fixed);
-    } catch (err) {
->>>>>>> c9869b883e4f51980518499c7d2fb54824fa6d4c:mainnet/mainnet_1inch.ts
         console.log('Flash pool is not exist!');
         return null;
     }
@@ -163,7 +152,7 @@ const checkApproval = async () => {
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], tradeDatas: string[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], routers: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
     if (tokenPath.length != tradeDatas.length) {
         console.log('Swap data is not correct!')
@@ -175,6 +164,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         loanTokens,
         loanAmounts,
         tokenPath,
+        routers,
         tradeDatas
     );
     const nonce = await web3.eth.getTransactionCount(account);
@@ -220,6 +210,7 @@ const initTokenContract = async () => {
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const tokenPath: string[] = tokens.map(_token => _token.address);
+    const routers: string[] = [];
     const tradeDatas: string[] = [];
     const amountOut: BN[] = [];
     amountOut.push(inputAmount);
@@ -239,6 +230,7 @@ const runBot = async (inputAmount: BN) => {
         gas = new BN(res.tx.gas).times(res.tx.gasPrice);
         amountOut[i + 1] = new BN(res.toTokenAmount);
         let dexName = res.protocols[0][0][0].name;
+        routers.push(res.tx.to);
         tradeDatas.push(res.tx.data);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
         let amountInPrint = toPrintable(amountOut[i], tokens[i].decimals, fixed);
@@ -249,10 +241,10 @@ const runBot = async (inputAmount: BN) => {
             // 'Estimate Gas': `${gas} Gwei`
         });
     }
-    console.log(tokenPath);
-    console.log([inputAmount.toFixed(), '0']);
-    console.log(oneInchRouters);
-    console.log(tradeDatas);
+    // console.log(tokenPath);
+    // console.log([inputAmount.toFixed(), '0']);
+    // console.log(routers);
+    // console.log(tradeDatas);
     // table.addRow({'Estimate Gas': `${gas} Gwei`})
     table.printTable();
 
@@ -273,11 +265,8 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, routers, tradeDatas);
     }
-
-    console.log();
-    return [profit, table, tokenPath];
 }
 
 /**
@@ -299,7 +288,7 @@ const main = async () => {
     });
 
     await initTokenContract();
-    await checkApproval();
+    // await checkApproval();
     while (true) {
         let response = await inquirer.prompt([{
             type: 'input',

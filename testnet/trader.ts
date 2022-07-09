@@ -50,7 +50,7 @@ const fixed = 4;
 // const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const web3 = new Web3('http://127.0.0.1:8545');
 const account = web3.eth.accounts.privateKeyToAccount(process.env.TEST_PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FLASHSWAP_ADDRESS);
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.TESTNET_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);

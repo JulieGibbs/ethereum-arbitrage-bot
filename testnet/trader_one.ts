@@ -43,7 +43,7 @@ const fixed = 4;
 // const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const web3 = new Web3('http://127.0.0.1:8545');
 const account = web3.eth.accounts.privateKeyToAccount(process.env.TEST_PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.TESTNET_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -148,7 +148,7 @@ const initTokenContract = async () => {
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const tokenPath: string[] = tokens.map(_token => _token.address);
-    const oneInchRouters: string[] = [];
+    const routers: string[] = [];
     const tradeDatas: string[] = [];
     const amountOut: BN[] = [];
     amountOut.push(inputAmount);
@@ -168,7 +168,7 @@ const runBot = async (inputAmount: BN) => {
         gas = new BN(res.tx.gas).times(res.tx.gasPrice);
         amountOut[i + 1] = new BN(res.toTokenAmount);
         let dexName = res.protocols[0][0][0].name;
-        oneInchRouters.push(res.tx.to);
+        routers.push(res.tx.to);
         tradeDatas.push(res.tx.data);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
         let amountInPrint = toPrintable(amountOut[i], tokens[i].decimals, fixed);
@@ -179,10 +179,10 @@ const runBot = async (inputAmount: BN) => {
             // 'Estimate Gas': `${gas} Gwei`
         });
     }
-    console.log(tokenPath);
-    console.log([inputAmount.toFixed(), '0']);
-    console.log(oneInchRouters);
-    console.log(tradeDatas);
+    // console.log(tokenPath);
+    // console.log([inputAmount.toFixed(), '0']);
+    // console.log(routers);
+    // console.log(tradeDatas);
     // table.addRow({'Estimate Gas': `${gas} Gwei`})
     table.printTable();
 
@@ -203,11 +203,8 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, oneInchRouters, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, routers, tradeDatas);
     }
-
-    console.log();
-    return [profit, table, tokenPath];
 }
 
 /**
