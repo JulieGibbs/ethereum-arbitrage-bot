@@ -49,8 +49,8 @@ const fixed = 4;
 
 // const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const web3 = new Web3('http://127.0.0.1:8545');
-const account = web3.eth.accounts.privateKeyToAccount(process.env.TEST_PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.TESTNET_CONTRACT_ADDRESS);
+const account = web3.eth.accounts.privateKeyToAccount(process.env.FORK_PRIVATE_KEY!).address;
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
@@ -93,6 +93,7 @@ const maxFlashamount = async () => {
 
     try {
         const flashPool = await flashFactory.methods.getPool(tokens[0].address, otherToken, 500).call();
+        // console.log(flashPool)
         const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
         return maxAmount;
@@ -110,8 +111,6 @@ const maxFlashamount = async () => {
  */
 const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
-    const amountInString = amountIn.toFixed();
-
     const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
@@ -132,7 +131,7 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-    // console.log(un3Quote.toFixed())
+    
     return [un3Quote, un2Quote, suQuote, shQuote, dfQuote];
 }
 
@@ -151,6 +150,8 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
     }
     const loanTokens = loanToken === TOKEN.WETH.address ? [TOKEN.DAI.address, loanToken] : [loanToken, TOKEN.WETH.address];
     const loanAmounts = loanToken === TOKEN.WETH.address ? ['0', loanAmount.toFixed()] : [loanAmount.toFixed(), '0']
+    // console.log(loanTokens);
+    // console.log(loanAmounts);
     const init = flashSwap.methods.initUniFlashSwap(
         loanTokens,
         loanAmounts,
@@ -158,13 +159,15 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         routers,
         tradeDatas
     );
+    const nonce = await web3.eth.getTransactionCount(account);
     const tx = {
         from: account,
         to: flashSwap.options.address,
+        nonce: nonce,
         gas: 2000000,
         data: init.encodeABI()
     };
-    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.TEST_PRIVATE_KEY!);
+    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.FORK_PRIVATE_KEY!);
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
@@ -219,27 +222,27 @@ const runBot = async (inputAmount: BN) => {
         if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
             amountPrint[0] = amountPrint[0].underline;
             routers.push(un3Router.options.address);
-            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, un3Router));
+            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un3Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             amountPrint[1] = amountPrint[1].underline;
             routers.push(un2Router.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             amountPrint[2] = amountPrint[2].underline;
             routers.push(suRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
             amountPrint[3] = amountPrint[3].underline;
             routers.push(shRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             amountPrint[4] = amountPrint[4].underline;
             routers.push(dfRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
         }
         
         table.addRow({
@@ -251,10 +254,10 @@ const runBot = async (inputAmount: BN) => {
             'DefiSwap': `${amountPrint[4]} ${tokens[next].symbol}`
         });
     }
-    console.log(tokenPath);
-    console.log([inputAmount.toFixed(), '0']);
-    console.log(routers);
-    console.log(tradeDatas);
+    // console.log(tokenPath);
+    // console.log([inputAmount.toFixed(), '0']);
+    // console.log(routers);
+    // console.log(tradeDatas);
     table.printTable();
 
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);

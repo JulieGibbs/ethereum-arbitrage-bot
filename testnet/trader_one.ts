@@ -5,14 +5,12 @@ import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
 import { getSwapFrom1InchApi, toPrintable } from '../lib/utils';
-import { getFlashBalanceOnUniV3 } from '../lib/uniswap/v3/getCalldata';
 // Types
 import { Token, Network, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
 import TOKEN from '../config/mainnet.json';
-import DEX from '../config/dexs.json';
 
 // ABIs
 import IContract from '../abi/UniswapFlash1Inch.json';
@@ -42,8 +40,8 @@ const fixed = 4;
 
 // const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
 const web3 = new Web3('http://127.0.0.1:8545');
-const account = web3.eth.accounts.privateKeyToAccount(process.env.TEST_PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.TESTNET_CONTRACT_ADDRESS);
+const account = web3.eth.accounts.privateKeyToAccount(process.env.FORK_PRIVATE_KEY!).address;
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -113,7 +111,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         gas: 2000000,
         data: init.encodeABI()
     };
-    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.TEST_PRIVATE_KEY!);
+    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.FORK_PRIVATE_KEY!);
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
