@@ -185,8 +185,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             'SushiSwap': `${suAmountPrint} ${tokenPath[next].symbol}`,
             'ShibaSwap': `${shAmountPrint} ${tokenPath[next].symbol}`,
             'DefiSwap': `${dfAmountPrint} ${tokenPath[next].symbol}`,
-            'Balancer': `${bsAmountPrint} ${tokenPath[next].symbol}`,
-            'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
+            // 'Balancer': `${bsAmountPrint} ${tokenPath[next].symbol}`,
+            // 'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
         });
     }
 

@@ -16,8 +16,8 @@ import DEX from '../config/dexs.json';
 // ABIs
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
 import un2IRouter from '../abi/UniswapV2Router02.json';
-import shIRouter from '../abi/UniswapV2Router02.json';
-import dfIRouter from '../abi/UniswapV2Router02.json';
+// import shIRouter from '../abi/UniswapV2Router02.json';
+// import dfIRouter from '../abi/UniswapV2Router02.json';
 import bsIRouter from '../abi/BalancerVault.json';
 // import kbIQuoter from '../abi/KyberQuoter.json';
 
@@ -45,8 +45,8 @@ const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
-const shRouter = new web3.eth.Contract(shIRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
-const dfRouter = new web3.eth.Contract(dfIRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
+const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
+const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
 const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
 // const kbQuoter = new web3.eth.Contract(kbIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter);
 
@@ -185,8 +185,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             'SushiSwap': `${suAmountPrint} ${tokenPath[next].symbol}`,
             'ShibaSwap': `${shAmountPrint} ${tokenPath[next].symbol}`,
             'DefiSwap': `${dfAmountPrint} ${tokenPath[next].symbol}`,
-            'Balancer': `${bsAmountPrint} ${tokenPath[next].symbol}`,
-            'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
+            // 'Balancer': `${bsAmountPrint} ${tokenPath[next].symbol}`,
+            // 'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
         });
     }
 

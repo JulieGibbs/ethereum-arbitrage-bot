@@ -200,7 +200,6 @@ const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const dexPath: number[] = [];
     const tokenPath: string[] = tokens.map(_token => _token.address);
-    // tokenPath.push(tokenPath.shift()!);
     const routers: string[] = [];
     const tradeDatas: string[] = [];
     const maxAmountOut: BN[] = [inputAmount,];
@@ -252,10 +251,10 @@ const runBot = async (inputAmount: BN) => {
             'DefiSwap': `${amountPrint[4]} ${tokens[next].symbol}`
         });
     }
-    // console.log(tokenPath);
-    // console.log([inputAmount.toFixed(), '0']);
-    // console.log(routers);
-    // console.log(tradeDatas);
+    console.log(tokenPath);
+    console.log([inputAmount.toFixed(), '0']);
+    console.log(routers);
+    console.log(tradeDatas);
     table.printTable();
 
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
