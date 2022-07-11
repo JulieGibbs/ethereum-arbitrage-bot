@@ -9,7 +9,7 @@ export type Tokens = {
     [key: string]: Token
 }
 
-export type Network = 'mainnet' | 'rinkeby' | 'kovan' | 'ropsten' | 'goerli';
+export type Network = 'mainnet' | 'kovan' | 'ropsten' | 'polygon' | 'bsc' | 'avalanche' | 'fantom' | 'optimism';
 
 export type FileContent = {
     path: string[]

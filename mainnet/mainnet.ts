@@ -141,7 +141,7 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], routers: string[], tradeDatas: string[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], spenders: string[], routers: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
     if (tokenPath.length != routers.length || tokenPath.length != tradeDatas.length) {
         console.log('Swap data is not correct!')
@@ -153,6 +153,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         loanTokens,
         loanAmounts,
         tokenPath,
+        spenders,
         routers,
         tradeDatas
     );
@@ -198,7 +199,7 @@ const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const dexPath: number[] = [];
     const tokenPath: string[] = tokens.map(_token => _token.address);
-    // tokenPath.push(tokenPath.shift()!);
+    const spenders: string[] = [];
     const routers: string[] = [];
     const tradeDatas: string[] = [];
     const maxAmountOut: BN[] = [inputAmount,];
@@ -217,28 +218,33 @@ const runBot = async (inputAmount: BN) => {
 
         if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
             amountPrint[0] = amountPrint[0].underline;
+            spenders.push(un3Router.options.address);
             routers.push(un3Router.options.address);
-            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, un3Router));
+            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un3Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             amountPrint[1] = amountPrint[1].underline;
+            spenders.push(un2Router.options.address);
             routers.push(un2Router.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             amountPrint[2] = amountPrint[2].underline;
+            spenders.push(suRouter.options.address);
             routers.push(suRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
             amountPrint[3] = amountPrint[3].underline;
+            spenders.push(shRouter.options.address);
             routers.push(shRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             amountPrint[4] = amountPrint[4].underline;
+            spenders.push(dfRouter.options.address);
             routers.push(dfRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], new BN(1000000000), [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
+            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
         }
         
         table.addRow({
@@ -273,7 +279,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, routers, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, spenders, routers, tradeDatas);
     }
 
 }

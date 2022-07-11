@@ -3,7 +3,7 @@ import fs from 'fs';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getPriceFrom1InchApi, toPrintable } from '../lib/utils';
+import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
 
 // Types
 import { Token, Network, FileContent } from '../lib/types';
@@ -40,18 +40,18 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
-        let res = await getPriceFrom1InchApi(
+        let res = await getSwapFromZeroXApi(
             amountOut[i],
             tokenPath[i].address,
             tokenPath[next].address,
             network
         );
         if (res === null) return {};
-
-        gas += res.estimatedGas;
-        amountOut[i + 1] = new BN(res.toTokenAmount);
+        // console.log(res);
+        gas += parseInt(res.gas);
+        amountOut[i + 1] = new BN(res.buyAmount);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokenPath[next].decimals, fixed);
-        let dexName = res.protocols[0][0][0].name;
+        let dexName = res.orders[0].source;
 
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
 
@@ -60,9 +60,16 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             [dexName]: `${toAmountPrint} ${tokenPath[next].symbol}`
         });
     }
-
-    const profit = amountOut[tokenPath.length].minus(amountOut[0]).minus(feeAmount);
-
+    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
+        amountIn,
+        tokenPath[0].address,
+        TOKEN.DAI.address,
+        network
+    ) : null;
+    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
+    // console.log(price.toFixed())
+    const profit = amountOut[tokenPath.length].minus(amountIn).minus(feeAmount);
+    const profitUSD = profit.times(price); 
     if (profit.isFinite()) {
         table.printTable();
         console.log(
@@ -74,6 +81,11 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
             tokenPath[0].symbol,
+            '($',
+            profitUSD.gt(0) ?
+                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
+                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
+            ')',
             '\tEstimate gas:',
             gas,
             '\n'

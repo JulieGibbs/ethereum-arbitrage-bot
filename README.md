@@ -26,9 +26,9 @@ npm install
         ```
         yarn main-trader dai weth
         ```
-    * trader bot for 1inch V4 Router
+    * trader bot for 0x Exchange
         ```
-        yarn main-trader-one dai weth
+        yarn main-trader-zero dai weth
         ```
     * finder2pair bot
         ```
@@ -38,22 +38,22 @@ npm install
         ```
         yarn main-finder3
         ```
-    * finder2pair_api bot
+    * finder3pair_zero bot
         ```
-        yarn main-finder2-api
+        yarn main-finder3-zero
         ```
-    * finder3pair_api bot
+    * finder2pair_zero bot
         ```
-        yarn main-finder3-api
+        yarn main-finder3-zero
         ```
 - On mainnet fork
     * trader bot
         ```
         yarn test-trader dai weth
         ```
-    * trader bot for 1inch V4 Router
+    * trader bot for 0x Exchange
         ```
-        yarn test-trader-one dai weth
+        yarn test-trader-zero dai weth
         ```
     * finder2pair bot
         ```

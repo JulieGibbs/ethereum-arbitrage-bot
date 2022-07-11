@@ -7,6 +7,8 @@ import BN from 'bignumber.js';
 import { toPrintable } from '../lib/utils';
 import { getPriceOnUniV2, getSwapOnUniv2 } from '../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3, getSwapOnUniv3 } from '../lib/uniswap/v3/getCalldata';
+import { getPriceOnOneSplit, getSwapOnOneSplit } from '../lib/oneinch/onesplit/getCalldata';
+import { getMooniSwap, getPriceOnMooni } from '../lib/mooniswap/getCalldata';
 
 // Types
 import { Token, Network, Multicall } from '../lib/types';
@@ -17,11 +19,13 @@ import TOKEN from '../config/mainnet.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
-import IContract from '../abi/UniswapFlash1Inch.json';
-import IUniV3Factory from '../abi/UniswapV3Factory.json';
+import flashSwapAbi from '../abi/UniswapFlash1Inch.json';
+import un3IFactory from '../abi/UniswapV3Factory.json';
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
 import un3IRouter from '../abi/UniswapV3Router.json';
 import un2IRouter from '../abi/UniswapV2Router02.json';
+import osIRouter from '../abi/OneSplit.json';
+import msIFactory from '../abi/MooniFactory.json';
 import IMulticall from '../abi/UniswapV3Multicall2.json';
 import IERC20 from '../abi/ERC20.json';
 
@@ -48,17 +52,18 @@ const loanFee = 0.0005;
 const fixed = 4;
 
 // const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-const web3 = new Web3('http://127.0.0.1:8545');
+const web3 = new Web3('http://127.0.0.1:7545');
 const account = web3.eth.accounts.privateKeyToAccount(process.env.FORK_PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
-const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
-
+const flashSwap = new web3.eth.Contract(flashSwapAbi.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
+const flashFactory = new web3.eth.Contract(un3IFactory.abi as AbiItem[], process.env.UNIV3FACTORY);
+const mooniFactory = new web3.eth.Contract(msIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);
 const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 const un3Router = new web3.eth.Contract(un3IRouter.abi as AbiItem[], DEX[network].UniswapV3.Router);
 const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
 const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
+const osRouter = new web3.eth.Contract(osIRouter.abi as AbiItem[], DEX[network].OneSlpit.Router);
 
 const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
@@ -111,18 +116,23 @@ const maxFlashamount = async () => {
  */
 const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
+    const msRouter = await getMooniSwap(tokenIn, tokenOut, mooniFactory, web3);
+    // console.log(msRouter.options.address);
     const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
     const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
-
+    const os = getPriceOnOneSplit(amountIn, tokenIn, tokenOut, osRouter);
+    const ms = getPriceOnMooni(amountIn, tokenIn, tokenOut, msRouter);
     calls.push(
         [un3Quoter.options.address, un3],
         [un2Router.options.address, un2],
         [suRouter.options.address, su],
         [shRouter.options.address, sh],
-        [dfRouter.options.address, df]
+        [dfRouter.options.address, df],
+        [osRouter.options.address, os],
+        [msRouter.options.address, ms]
     );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
@@ -131,8 +141,11 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-    
-    return [un3Quote, un2Quote, suQuote, shQuote, dfQuote];
+    // const osQuote = result[5].success ? new BN(web3.eth.abi.decodeParameter('uint256,uint256[]', result[5].returnData).returnAmount as any) : new BN(-Infinity);
+    const osQuote = new BN(-Infinity)
+    // const msQuote = result[6].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
+    const msQuote = new BN(-Infinity)
+    return [un3Quote, un2Quote, suQuote, shQuote, dfQuote, osQuote, msQuote];
 }
 
 /**
@@ -142,7 +155,7 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], routers: string[], tradeDatas: string[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], spenders: string[], routers: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
     if (tokenPath.length != routers.length || tokenPath.length != tradeDatas.length) {
         console.log('Swap data is not correct!')
@@ -156,6 +169,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         loanTokens,
         loanAmounts,
         tokenPath,
+        spenders,
         routers,
         tradeDatas
     );
@@ -203,6 +217,7 @@ const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const dexPath: number[] = [];
     const tokenPath: string[] = tokens.map(_token => _token.address);
+    const spenders: string[] = [];
     const routers: string[] = [];
     const tradeDatas: string[] = [];
     const maxAmountOut: BN[] = [inputAmount,];
@@ -221,37 +236,50 @@ const runBot = async (inputAmount: BN) => {
 
         if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
             amountPrint[0] = amountPrint[0].underline;
+            spenders.push(un3Router.options.address);
             routers.push(un3Router.options.address);
             tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un3Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             amountPrint[1] = amountPrint[1].underline;
+            spenders.push(un2Router.options.address);
             routers.push(un2Router.options.address);
             tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             amountPrint[2] = amountPrint[2].underline;
+            spenders.push(suRouter.options.address);
             routers.push(suRouter.options.address);
             tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
             amountPrint[3] = amountPrint[3].underline;
+            spenders.push(shRouter.options.address);
             routers.push(shRouter.options.address);
             tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             amountPrint[4] = amountPrint[4].underline;
+            spenders.push(dfRouter.options.address);
             routers.push(dfRouter.options.address);
             tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
         }
-        
+        else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
+            amountPrint[5] = amountPrint[5].underline;
+            spenders.push(osRouter.options.address);
+            routers.push(osRouter.options.address);
+            tradeDatas.push(getSwapOnOneSplit(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], ["", ""], osRouter));
+        }
+       
         table.addRow({
             'Input Token': `${amountIn} ${tokens[i].symbol}`,
             'UniSwapV3': `${amountPrint[0]} ${tokens[next].symbol}`,
             'UniSwapV2': `${amountPrint[1]} ${tokens[next].symbol}`,
             'SushiSwap': `${amountPrint[2]} ${tokens[next].symbol}`,
             'ShibaSwap': `${amountPrint[3]} ${tokens[next].symbol}`,
-            'DefiSwap': `${amountPrint[4]} ${tokens[next].symbol}`
+            'DefiSwap': `${amountPrint[4]} ${tokens[next].symbol}`,
+            'OneSplit': `${amountPrint[5]} ${tokens[next].symbol}`,
+            'MooniSwap': `${amountPrint[6]} ${tokens[next].symbol}`
         });
     }
     // console.log(tokenPath);
@@ -277,7 +305,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, routers, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, spenders, routers, tradeDatas);
     }
 
 }

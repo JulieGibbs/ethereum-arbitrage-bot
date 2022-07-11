@@ -5,14 +5,14 @@
   "main": "bot.js",
   "scripts": {
     "main-finder2": "npx ts-node mainnet/finder2pair",
-    "main-finder2-api": "npx ts-node mainnet/finder2pair_api",
+    "main-finder2-zero": "npx ts-node mainnet/finder2pair_zero",
     "main-finder3": "npx ts-node mainnet/finder3pair",
-    "main-finder3-api": "npx ts-node mainnet/finder3pair_api",
+    "main-finder3-zero": "npx ts-node mainnet/finder3pair_zero",
     "main-trader": "npx ts-node mainnet/mainnet",
-    "main-trader-one": "npx ts-node mainnet/mainnet_one",
+    "main-trader-zero": "npx ts-node mainnet/trader_zero",
     "test-finder2": "npx ts-node testnet/finder2pair",
     "test-trader": "npx ts-node testnet/trader",
-    "test-trader-one": "npx ts-node testnet/trader_one"
+    "test-trader-zero": "npx ts-node testnet/trader_zero"
   },
   "keywords": [
     "arbitrage",

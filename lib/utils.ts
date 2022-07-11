@@ -137,7 +137,26 @@ export const getBalancerQuote = async (amountIn: BN, tokenIn: string, tokenOut: 
         return new BN(-Infinity);
     }
 }
-
+export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network) => {
+    let chainId = '';
+    if (network === 'ropsten') chainId = 'ropsten.';
+    if (network === 'polygon') chainId = 'polygon.';
+    if (network === 'bsc') chainId = 'bsc.';
+    if (network === 'optimism') chainId = 'optimism.';
+    try {
+        const res = await axios.get(`https://${chainId}api.0x.org/swap/v1/quote`, {
+            params: {
+                sellToken: tokenIn,
+                buyToken: tokenOut,
+                sellAmount: amountIn.toFixed()
+            }
+        });
+        return res.data;
+    }
+    catch (err) {
+        return null;
+    }
+}
 /**
  * Get dex path and quote.
  * @param amountIn Input amount of token.
@@ -149,8 +168,6 @@ export const getBalancerQuote = async (amountIn: BN, tokenIn: string, tokenOut: 
 export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network) => {
     let chainId = 1;
     if (network === 'ropsten') chainId = 3;
-    if (network === 'rinkeby') chainId = 4;
-    if (network === 'goerli') chainId = 5;
     if (network === 'kovan') chainId = 42;
     try {
         const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/quote`, {
@@ -179,8 +196,6 @@ export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenO
 export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network, flashswap: string) => {
     let chainId = 1;
     if (network === 'ropsten') chainId = 3;
-    if (network === 'rinkeby') chainId = 4;
-    if (network === 'goerli') chainId = 5;
     if (network === 'kovan') chainId = 42;
     try {
         const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/swap`, {
