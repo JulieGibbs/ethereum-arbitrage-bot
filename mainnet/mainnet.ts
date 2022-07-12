@@ -279,7 +279,6 @@ const runBot = async (inputAmount: BN) => {
             profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
             profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
         tokens[0].symbol,
-        tokens[0].symbol,
         '($',
             profitUSD.gt(0) ?
                 profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
@@ -296,7 +295,58 @@ const runBot = async (inputAmount: BN) => {
     }
 
 }
+const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
+    const dexPath: number[] = [];
+    const maxAmountOut: BN[] = [amountIn,];
+    const amountOut: BN[][] = [];
+    const [a, b] = new BN(loanFee).toFraction();
+    const feeAmount = amountIn.times(a).idiv(b);
 
+    for (let i = 0; i < tokenPath.length; i++) {
+        let next = (i + 1) % tokenPath.length;
+        amountOut[i] = await getAllQuotes(maxAmountOut[i], tokenPath[i].address, tokenPath[next].address);
+        maxAmountOut[i + 1] = BN.max(...amountOut[i]);
+        let amountIn: string = toPrintable(maxAmountOut[i], tokenPath[i].decimals, fixed);
+        let amountPrint: string[] = amountOut[i].map(out => toPrintable(out, tokenPath[next].decimals, fixed));
+
+        if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
+            amountPrint[0] = amountPrint[0].underline;
+        }
+        else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
+            amountPrint[1] = amountPrint[1].underline;
+        }
+        else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
+            amountPrint[2] = amountPrint[2].underline;
+        }
+        else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
+            amountPrint[3] = amountPrint[3].underline;
+        }
+        else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
+            amountPrint[4] = amountPrint[4].underline;
+        }
+        // else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
+        //     amountPrint[5] = amountPrint[5].underline;
+        // }
+        // else if (maxAmountOut[i + 1].eq(amountOut[i][6])) {
+        //     amountPrint[6] = amountPrint[6].underline;
+        // }
+
+    }
+    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
+        amountIn,
+        tokenPath[0].address,
+        TOKEN.DAI.address,
+        network
+    ) : null;
+    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
+    const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
+    const profitUSD = profit.times(price); 
+    
+    return { profitUSD, dexPath };
+}
+const getOptiInput = () => {
+
+}
 /**
  * Bot start here.
  */

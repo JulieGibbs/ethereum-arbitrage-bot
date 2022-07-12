@@ -91,7 +91,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             '\n'
         );
     }
-    return { profit, table, dexPath };
+    return { profitUSD, table, dexPath };
 }
 
 /**
@@ -105,11 +105,11 @@ const main = async () => {
             if (i === 'WETH' || 'WETH' === j || j === i) continue;
             let input = new BN(10).times(new BN(10).pow(TOKEN['WETH'].decimals));
             let path = [TOKEN['WETH'], TOKEN[i], TOKEN[j]];
-            let { profit } = await calculateProfit(input, path);
-            if (profit && profit.gt(0)) {
+            let { profitUSD } = await calculateProfit(input, path);
+            if (profitUSD && profitUSD.gt(0)) {
                 fileContent.push({
                     path: path.map(t => t.symbol),
-                    profit: profit.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
+                    profit: '$' + profitUSD.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
                 });
             }
         }

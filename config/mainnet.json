@@ -107,12 +107,6 @@
         "symbol": "AUDIO",
         "decimals": 18
     },
-    "AVT": {
-        "address": "0x845576c64f9754CF09d87e45B720E82F3EeF522C",
-        "name": "Artverse Token",
-        "symbol": "AVT",
-        "decimals": 18
-    },
     "AXS": {
         "address": "0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b",
         "name": "Axie Infinity",
@@ -165,12 +159,6 @@
         "address": "0x0391D2021f89DC339F60Fff84546EA23E337750f",
         "name": "BarnBridge",
         "symbol": "BOND",
-        "decimals": 18
-    },
-    "BTRST": {
-        "address": "0x799ebfABE77a6E34311eeEe9825190B9ECe32824",
-        "name": "Braintrust",
-        "symbol": "BTRST",
         "decimals": 18
     },
     "BUSD": {
@@ -401,12 +389,6 @@
         "symbol": "GUSD",
         "decimals": 2
     },
-    "GYEN": {
-        "address": "0xC08512927D12348F6620a698105e1BAac6EcD911",
-        "name": "GYEN",
-        "symbol": "GYEN",
-        "decimals": 6
-    },
     "HIGH": {
         "address": "0x71Ab77b7dbB4fa7e017BC15090b2163221420282",
         "name": "Highstreet",
@@ -633,12 +615,6 @@
         "address": "0xd26114cd6EE289AccF82350c8d8487fedB8A0C07",
         "name": "OMG Network",
         "symbol": "OMG",
-        "decimals": 18
-    },
-    "ORCA": {
-        "address": "0x6F59e0461Ae5E2799F1fB3847f05a63B16d0DbF8",
-        "name": "ORCA Alliance",
-        "symbol": "ORCA",
         "decimals": 18
     },
     "ORN": {
@@ -869,12 +845,6 @@
         "symbol": "STORJ",
         "decimals": 8
     },
-    "STX": {
-        "address": "0x006BeA43Baa3f7A6f765F14f10A1a1b08334EF45",
-        "name": "Stox",
-        "symbol": "STX",
-        "decimals": 18
-    },
     "SUKU": {
         "address": "0x0763fdCCF1aE541A5961815C0872A8c5Bc6DE4d7",
         "name": "SUKU",
@@ -988,12 +958,6 @@
         "name": "Wrapped UST",
         "symbol": "USTC",
         "decimals": 18
-    },
-    "VGX": {
-        "address": "0x3C4B6E6e1eA3D4863700D7F76b36B7f3D3f13E3d",
-        "name": "Voyager Token",
-        "symbol": "VGX",
-        "decimals": 8
     },
     "WBTC": {
         "name": "Wrapped BTC",

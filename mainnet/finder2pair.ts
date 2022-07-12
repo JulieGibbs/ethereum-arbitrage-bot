@@ -13,7 +13,7 @@ import { getMooniSwap, getPriceOnMooni } from '../lib/mooniswap/getCalldata';
 import { Token, Network, FileContent, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
 
-import TOKEN from '../config/super_short.json';
+import TOKEN from '../config/mainnet.json';
 import DEX from '../config/dexs.json';
 
 // ABIs
@@ -115,6 +115,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
+        if (!maxAmountOut[i].isFinite()) return{};
         amountOut[i] = await getAllQuotes(maxAmountOut[i], tokenPath[i].address, tokenPath[next].address);
         maxAmountOut[i + 1] = BN.max(...amountOut[i]);
         let amountIn: string = toPrintable(maxAmountOut[i], tokenPath[i].decimals, fixed);
@@ -179,7 +180,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             ')'
         );
     }
-    return { profit, table };
+    return { profitUSD, table };
 }
 
 /**
@@ -190,13 +191,13 @@ const main = async () => {
 
     for (let i in TOKEN) {
         if (i === 'WETH') continue;
-        let input = new BN(10).times(new BN(10).pow(TOKEN['WETH'].decimals));
+        let input = new BN(1).times(new BN(10).pow(TOKEN['WETH'].decimals));
         let path = [TOKEN['WETH'], TOKEN[i]];
-        let { profit } = await calculateProfit(input, path);
-        if (profit.gt(0)) {
+        let { profitUSD } = await calculateProfit(input, path);
+        if (profitUSD && profitUSD.gt(0)) {
             fileContent.push({
                 path: path.map(t => t.symbol),
-                profit: profit.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
+                profit: '$' + profitUSD.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
             });
         }
     }

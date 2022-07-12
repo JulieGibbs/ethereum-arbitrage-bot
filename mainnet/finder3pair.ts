@@ -67,7 +67,6 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
  * @returns Array of quotes.
  */
  const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
-    if (!amountIn.isFinite()) return new Array(5).fill(new BN(-Infinity));
     const calls = [];
     // const msRouter = await getMooniSwap(tokenIn, tokenOut, mooniFactory, web3);
     // console.log(msRouter.options.address);
@@ -119,6 +118,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
+        if (!maxAmountOut[i].isFinite()) return{};
         amountOut[i] = await getAllQuotes(maxAmountOut[i], tokenPath[i].address, tokenPath[next].address);
         maxAmountOut[i + 1] = BN.max(...amountOut[i]);
         let amountIn: string = toPrintable(maxAmountOut[i], tokenPath[i].decimals, fixed);
@@ -184,7 +184,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             ')'
         );
     }
-    return { profit, table, dexPath };
+    return { profitUSD, table, dexPath };
 }
 
 /**
@@ -196,13 +196,13 @@ const main = async () => {
     for (let i in TOKEN) {
         for (let j in TOKEN) {
             if (i === 'WETH' || 'WETH' === j || j === i) continue;
-            let input = new BN(10).times(new BN(10).pow(TOKEN['WETH'].decimals));
-            let path = [TOKEN['WETH'], TOKEN[i], TOKEN[j]];
-            let { profit } = await calculateProfit(input, path);
-            if (profit.gt(0)) {
+            let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
+            let path = [TOKEN[i], TOKEN['WETH'], TOKEN[j]];
+            let { profitUSD } = await calculateProfit(input, path);
+            if (profitUSD && profitUSD.gt(0)) {
                 fileContent.push({
                     path: path.map(t => t.symbol),
-                    profit: profit.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
+                    profit: '$' + profitUSD.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
                 });
             }
         }

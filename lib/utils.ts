@@ -154,6 +154,7 @@ export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: string, tokenOu
         return res.data;
     }
     catch (err) {
+        console.log(err.message);
         return null;
     }
 }
