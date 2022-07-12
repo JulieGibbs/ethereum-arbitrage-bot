@@ -4,8 +4,11 @@ import Web3 from 'web3';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { toPrintable } from '../lib/utils';
-
+import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
+import { getPriceOnUniV2 } from '../lib/uniswap/v2/getCalldata';
+import { getPriceOnUniV3 } from '../lib/uniswap/v3/getCalldata';
+import { getPriceOnOneSplit } from '../lib/oneinch/onesplit/getCalldata';
+import { getMooniSwap, getPriceOnMooni } from '../lib/mooniswap/getCalldata';
 // Types
 import { Token, Network, FileContent, Multicall } from '../lib/types';
 import { AbiItem } from 'web3-utils';
@@ -16,8 +19,8 @@ import DEX from '../config/dexs.json';
 // ABIs
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
 import un2IRouter from '../abi/UniswapV2Router02.json';
-// import shIRouter from '../abi/UniswapV2Router02.json';
-// import dfIRouter from '../abi/UniswapV2Router02.json';
+import osIRouter from '../abi/OneSplit.json';
+import msIFactory from '../abi/MooniFactory.json';
 import bsIRouter from '../abi/BalancerVault.json';
 // import kbIQuoter from '../abi/KyberQuoter.json';
 
@@ -47,8 +50,8 @@ const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
 const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
-const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
-// const kbQuoter = new web3.eth.Contract(kbIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter);
+const mooniFactory = new web3.eth.Contract(msIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);
+const osRouter = new web3.eth.Contract(osIRouter.abi as AbiItem[], DEX[network].OneSlpit.Router);
 
 const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
@@ -61,23 +64,26 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
  */
  const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
-    const amountInString = amountIn.toFixed();
-
-    const uni3 = un3Quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, 3000, amountInString, '0').encodeABI();
-    const uni2 = un2Router.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
-    const su = suRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
-    const sh = shRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
-    const df = dfRouter.methods.getAmountsOut(amountInString, [tokenIn, tokenOut]).encodeABI();
+    const msRouter = await getMooniSwap(tokenIn, tokenOut, mooniFactory, web3);
+    // console.log(msRouter.options.address);
+    const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
+    const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
+    const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
+    const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
+    const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
+    const os = getPriceOnOneSplit(amountIn, tokenIn, tokenOut, osRouter);
+    const ms = getPriceOnMooni(amountIn, tokenIn, tokenOut, msRouter);
     // const bs = bsRouter.methods.queryBatchSwap();
     // const kb = kbQuoter.methods.quoteExactInputSingle({ tokenIn, tokenOut, feeUnits: 3000, amountIn: amountInString, limitSqrtP: '0' }).encodeABI();
     
     calls.push(
-        [un3Quoter.options.address, uni3],
-        [un2Router.options.address, uni2],
+        [un3Quoter.options.address, un3],
+        [un2Router.options.address, un2],
         [suRouter.options.address, su],
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
-        // [kbQuoter.options.address, kb]
+        [osRouter.options.address, os],
+        [msRouter.options.address, ms]
     );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
@@ -86,10 +92,11 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
     const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-    const bsQuote = new BN(-Infinity);
-    const kbQuote = new BN(-Infinity);
-
-    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, bsQuote, kbQuote];
+    // const osQuote = result[5].success ? new BN(web3.eth.abi.decodeParameter('uint256,uint256[]', result[5].returnData).returnAmount as any) : new BN(-Infinity);
+    const osQuote = new BN(-Infinity);
+    // const msQuote = result[6].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
+    const msQuote =new BN(-Infinity);
+    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, osQuote, msQuote];
 }
 
 /**
@@ -101,97 +108,59 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
 const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);
     const table = new Table();
-    const dexPath: number[] = [];
-
-    const amountOut: BN[] = [],
-        un2AmountOut: BN[] = [],
-        un3AmountOut: BN[] = [],
-        suAmountOut: BN[] = [],
-        shAmountOut: BN[] = [],
-        dfAmountOut: BN[] = [],
-        bsAmountOut: BN[] = [],
-        kbAmountOut: BN[] = [];
-    amountOut[0] = un2AmountOut[0] = un3AmountOut[0] = suAmountOut[0] = shAmountOut[0] = bsAmountOut[0] = kbAmountOut[0] = amountIn;
-
+    const maxAmountOut: BN[] = [amountIn,];
+    const amountOut: BN[][] = [];
     const [a, b] = new BN(loanFee).toFraction();
-    const feeAmount = amountOut[0].times(a).idiv(b);
+    const feeAmount = amountIn.times(a).idiv(b);
 
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
+        amountOut[i] = await getAllQuotes(maxAmountOut[i], tokenPath[i].address, tokenPath[next].address);
+        maxAmountOut[i + 1] = BN.max(...amountOut[i]);
+        let amountIn: string = toPrintable(maxAmountOut[i], tokenPath[i].decimals, fixed);
+        let amountPrint: string[] = amountOut[i].map(out => toPrintable(out, tokenPath[next].decimals, fixed));
 
-        [
-            un3AmountOut[i + 1],
-            un2AmountOut[i + 1],
-            suAmountOut[i + 1],
-            shAmountOut[i + 1],
-            dfAmountOut[i + 1],
-            bsAmountOut[i + 1],
-            kbAmountOut[i + 1]
-        ] = await getAllQuotes(amountOut[i], tokenPath[i].address, tokenPath[next].address);
-
-        amountOut[i + 1] = BN.max(
-            un3AmountOut[i + 1],
-            un2AmountOut[i + 1],
-            suAmountOut[i + 1],
-            shAmountOut[i + 1],
-            dfAmountOut[i + 1],
-            bsAmountOut[i + 1],
-            kbAmountOut[i + 1]
-        );
-        let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
-
-        let un3AmountPrint = toPrintable(un3AmountOut[i + 1], tokenPath[next].decimals, fixed);
-        let un2AmountPrint = toPrintable(un2AmountOut[i + 1], tokenPath[next].decimals, fixed);
-        let suAmountPrint = toPrintable(suAmountOut[i + 1], tokenPath[next].decimals, fixed);
-        let shAmountPrint = toPrintable(shAmountOut[i + 1], tokenPath[next].decimals, fixed);
-        let dfAmountPrint = toPrintable(dfAmountOut[i + 1], tokenPath[next].decimals, fixed);
-        let bsAmountPrint = toPrintable(bsAmountOut[i + 1], tokenPath[next].decimals, fixed);
-        let kbAmountPrint = toPrintable(kbAmountOut[i + 1], tokenPath[next].decimals, fixed);
-
-        if (amountOut[i + 1].eq(un3AmountOut[i + 1])) {
-            un3AmountPrint = un3AmountPrint.underline;
-            dexPath.push(DEX[network].UniswapV3.id);
+        if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
+            amountPrint[0] = amountPrint[0].underline;
         }
-        else if (amountOut[i + 1].eq(un2AmountOut[i + 1])) {
-            un2AmountPrint = un2AmountPrint.underline;
-            dexPath.push(DEX[network].UniswapV2.id);
+        else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
+            amountPrint[1] = amountPrint[1].underline;
         }
-        else if (amountOut[i + 1].eq(suAmountOut[i + 1])) {
-            suAmountPrint = suAmountPrint.underline;
-            dexPath.push(DEX[network].SushiswapV2.id);
+        else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
+            amountPrint[2] = amountPrint[2].underline;
         }
-        else if (amountOut[i + 1].eq(shAmountOut[i + 1])) {
-            shAmountPrint = shAmountPrint.underline;
-            dexPath.push(DEX[network].ShibaswapV2.id);
+        else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
+            amountPrint[3] = amountPrint[3].underline;
         }
-        else if (amountOut[i + 1].eq(dfAmountOut[i + 1])) {
-            dfAmountPrint = dfAmountPrint.underline;
-            dexPath.push(DEX[network].DefiSwap.id);
+        else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
+            amountPrint[4] = amountPrint[4].underline;
         }
-        else if (amountOut[i + 1].eq(kbAmountOut[i + 1])) {
-            kbAmountPrint = kbAmountPrint.underline;
-            dexPath.push(DEX[network].Kyberswap.id);
+        else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
+            amountPrint[5] = amountPrint[5].underline;
         }
-        else if (amountOut[i + 1].eq(bsAmountOut[i + 1])) {
-            bsAmountPrint = bsAmountPrint.underline;
-            dexPath.push(DEX[network].Balancerswap.id);
+        else if (maxAmountOut[i + 1].eq(amountOut[i][6])) {
+            amountPrint[6] = amountPrint[6].underline;
         }
-        else dexPath.push(0);
-
         table.addRow({
-            'Input Token': `${amountInPrint} ${tokenPath[i].symbol}`,
-            'UniSwapV3': `${un3AmountPrint} ${tokenPath[next].symbol}`,
-            'UniSwapV2': `${un2AmountPrint} ${tokenPath[next].symbol}`,
-            'SushiSwap': `${suAmountPrint} ${tokenPath[next].symbol}`,
-            'ShibaSwap': `${shAmountPrint} ${tokenPath[next].symbol}`,
-            'DefiSwap': `${dfAmountPrint} ${tokenPath[next].symbol}`,
-            // 'Balancer': `${bsAmountPrint} ${tokenPath[next].symbol}`,
-            // 'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
+            'Input Token': `${amountIn} ${tokenPath[i].symbol}`,
+            'UniSwapV3': `${amountPrint[0]} ${tokenPath[next].symbol}`,
+            'UniSwapV2': `${amountPrint[1]} ${tokenPath[next].symbol}`,
+            'SushiSwap': `${amountPrint[2]} ${tokenPath[next].symbol}`,
+            'ShibaSwap': `${amountPrint[3]} ${tokenPath[next].symbol}`,
+            'DefiSwap': `${amountPrint[4]} ${tokenPath[next].symbol}`,
+            // 'OneSplit': `${amountPrint[5]} ${tokenPath[next].symbol}`,
+            // 'MooniSwap': `${amountPrint[6]} ${tokenPath[next].symbol}`
         });
     }
-
-    const profit = amountOut[tokenPath.length].minus(amountOut[0]).minus(feeAmount);
-
+    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
+        amountIn,
+        tokenPath[0].address,
+        TOKEN.DAI.address,
+        network
+    ) : null;
+    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
+    const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
+    const profitUSD = profit.times(price); 
     if (profit.isFinite()) {
         table.printTable();
         console.log(
@@ -203,10 +172,14 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
             tokenPath[0].symbol,
-            '\n'
+            '($',
+            profitUSD.gt(0) ?
+                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
+                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
+            ')'
         );
     }
-    return { profit, table, dexPath };
+    return { profit, table };
 }
 
 /**
@@ -217,8 +190,8 @@ const main = async () => {
 
     for (let i in TOKEN) {
         if (i === 'WETH') continue;
-        let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
-        let path = [TOKEN[i], TOKEN['WETH']];
+        let input = new BN(10).times(new BN(10).pow(TOKEN['WETH'].decimals));
+        let path = [TOKEN['WETH'], TOKEN[i]];
         let { profit } = await calculateProfit(input, path);
         if (profit.gt(0)) {
             fileContent.push({

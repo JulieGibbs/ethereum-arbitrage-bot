@@ -4,10 +4,10 @@ import Web3 from 'web3';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { toPrintable } from '../lib/utils';
-import { getPriceOnUniV2, getSwapOnUniv2 } from '../lib/uniswap/v2/getCalldata';
-import { getPriceOnUniV3, getSwapOnUniv3 } from '../lib/uniswap/v3/getCalldata';
-import { getPriceOnOneSplit, getSwapOnOneSplit } from '../lib/oneinch/onesplit/getCalldata';
+import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
+import { getPriceOnUniV2 } from '../lib/uniswap/v2/getCalldata';
+import { getPriceOnUniV3 } from '../lib/uniswap/v3/getCalldata';
+import { getPriceOnOneSplit } from '../lib/oneinch/onesplit/getCalldata';
 import { getMooniSwap, getPriceOnMooni } from '../lib/mooniswap/getCalldata';
 // Types
 import { Token, Network, FileContent, Multicall } from '../lib/types';
@@ -49,8 +49,8 @@ const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network
 const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
 const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
 const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
-const mooniFactory = new web3.eth.Contract(msIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);
-const osRouter = new web3.eth.Contract(osIRouter.abi as AbiItem[], DEX[network].OneSlpit.Router);
+// const mooniFactory = new web3.eth.Contract(msIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);
+// const osRouter = new web3.eth.Contract(osIRouter.abi as AbiItem[], DEX[network].OneSlpit.Router);
 
 // const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
 // const kbQuoter = new web3.eth.Contract(kbIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter);
@@ -66,15 +66,15 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
  */
  const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
-    const msRouter = await getMooniSwap(tokenIn, tokenOut, mooniFactory, web3);
+    // const msRouter = await getMooniSwap(tokenIn, tokenOut, mooniFactory, web3);
     // console.log(msRouter.options.address);
     const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
     const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
-    const os = getPriceOnOneSplit(amountIn, tokenIn, tokenOut, osRouter);
-    const ms = getPriceOnMooni(amountIn, tokenIn, tokenOut, msRouter);
+    // const os = getPriceOnOneSplit(amountIn, tokenIn, tokenOut, osRouter);
+    // const ms = getPriceOnMooni(amountIn, tokenIn, tokenOut, msRouter);
     // const bs = bsRouter.methods.queryBatchSwap();
     // const kb = kbQuoter.methods.quoteExactInputSingle({ tokenIn, tokenOut, feeUnits: 3000, amountIn: amountInString, limitSqrtP: '0' }).encodeABI();
     
@@ -84,8 +84,8 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
         [suRouter.options.address, su],
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
-        [osRouter.options.address, os],
-        [msRouter.options.address, ms]
+        // [osRouter.options.address, os],
+        // [msRouter.options.address, ms]
     );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
@@ -95,10 +95,8 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
     // const osQuote = result[5].success ? new BN(web3.eth.abi.decodeParameter('uint256,uint256[]', result[5].returnData).returnAmount as any) : new BN(-Infinity);
-    const osQuote = new BN(-Infinity);
     // const msQuote = result[6].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
-    const msQuote =new BN(-Infinity);
-    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, osQuote, msQuote];
+    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote];
 }
 
 /**
@@ -138,12 +136,12 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             amountPrint[4] = amountPrint[4].underline;
         }
-        else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
-            amountPrint[5] = amountPrint[5].underline;
-        }
-        else if (maxAmountOut[i + 1].eq(amountOut[i][6])) {
-            amountPrint[6] = amountPrint[6].underline;
-        }
+        // else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
+        //     amountPrint[5] = amountPrint[5].underline;
+        // }
+        // else if (maxAmountOut[i + 1].eq(amountOut[i][6])) {
+        //     amountPrint[6] = amountPrint[6].underline;
+        // }
         table.addRow({
             'Input Token': `${amountIn} ${tokenPath[i].symbol}`,
             'UniSwapV3': `${amountPrint[0]} ${tokenPath[next].symbol}`,
@@ -151,12 +149,19 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             'SushiSwap': `${amountPrint[2]} ${tokenPath[next].symbol}`,
             'ShibaSwap': `${amountPrint[3]} ${tokenPath[next].symbol}`,
             'DefiSwap': `${amountPrint[4]} ${tokenPath[next].symbol}`,
-            'OneSplit': `${amountPrint[5]} ${tokenPath[next].symbol}`,
-            'MooniSwap': `${amountPrint[6]} ${tokenPath[next].symbol}`
+            // 'OneSplit': `${amountPrint[5]} ${tokenPath[next].symbol}`,
+            // 'MooniSwap': `${amountPrint[6]} ${tokenPath[next].symbol}`
         });
     }
-
+    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
+        amountIn,
+        tokenPath[0].address,
+        TOKEN.DAI.address,
+        network
+    ) : null;
+    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
     const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
+    const profitUSD = profit.times(price); 
 
     if (profit.isFinite()) {
         table.printTable();
@@ -169,7 +174,11 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
             tokenPath[0].symbol,
-            '\n'
+            '($',
+            profitUSD.gt(0) ?
+                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
+                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
+            ')'
         );
     }
     return { profit, table, dexPath };

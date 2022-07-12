@@ -4,7 +4,7 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { toPrintable } from '../lib/utils';
+import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
 import { getPriceOnUniV2, getSwapOnUniv2 } from '../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3, getSwapOnUniv3 } from '../lib/uniswap/v3/getCalldata';
 
@@ -261,8 +261,15 @@ const runBot = async (inputAmount: BN) => {
     // console.log(routers);
     // console.log(tradeDatas);
     table.printTable();
-
+    let res = tokens[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
+        inputAmount,
+        tokens[0].address,
+        TOKEN.DAI.address,
+        network
+    ) : null;
+    const price = tokens[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
+    const profitUSD = profit.times(price); 
     console.log(
         'Input:',
         toPrintable(inputAmount, tokens[0].decimals, fixed),
@@ -271,7 +278,13 @@ const runBot = async (inputAmount: BN) => {
         profit.gt(0) ?
             profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
             profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        tokens[0].symbol
+        tokens[0].symbol,
+        tokens[0].symbol,
+        '($',
+            profitUSD.gt(0) ?
+                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
+                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
+        ')'
     );
     if (profit.gt(0)) {
         let response = await inquirer.prompt([{

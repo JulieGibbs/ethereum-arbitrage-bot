@@ -103,8 +103,8 @@ const main = async () => {
     for (let i in TOKEN) {
         for (let j in TOKEN) {
             if (i === 'WETH' || 'WETH' === j || j === i) continue;
-            let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
-            let path = [TOKEN[i], TOKEN['WETH'], TOKEN[j]];
+            let input = new BN(10).times(new BN(10).pow(TOKEN['WETH'].decimals));
+            let path = [TOKEN['WETH'], TOKEN[i], TOKEN[j]];
             let { profit } = await calculateProfit(input, path);
             if (profit && profit.gt(0)) {
                 fileContent.push({
