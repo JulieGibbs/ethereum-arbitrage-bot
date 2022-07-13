@@ -39,9 +39,12 @@ const loanFee = 0.0005;
  */
 const fixed = 4;
 
-const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+// const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
+// const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
+// const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+const web3 = new Web3('http://127.0.0.1:7545');
+const account = web3.eth.accounts.privateKeyToAccount(process.env.FORK_PRIVATE_KEY!).address;
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -226,6 +229,7 @@ const runBot = async (inputAmount: BN) => {
             network,
             flashSwap.options.address
         );
+        console.log(res);
         if (res === null) return {};
         gas = new BN(res.tx.gas).times(res.tx.gasPrice);
         amountOut[i + 1] = new BN(res.toTokenAmount);

@@ -13,7 +13,9 @@
     "dodo-finder2": "npx ts-node mainnet/dodo/finder2pair",
     "dodo-finder3": "npx ts-node mainnet/dodo/finder3pair",
     "dodo-trader": "npx ts-node mainnet/dodo/trader",
-    "test-trader-zero": "npx ts-node testnet/trader_zero"
+    "one-finder2": "npx ts-node mainnet/one/finder2pair",
+    "one-finder3": "npx ts-node mainnet/one/finder3pair",
+    "one-trader": "npx ts-node mainnet/one/trader"
   },
   "keywords": [
     "arbitrage",

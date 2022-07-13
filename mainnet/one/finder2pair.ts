@@ -8,9 +8,9 @@ import { getPriceFrom1InchApi, toPrintable } from '../../lib/utils';
 // Types
 import { Token, Network, FileContent } from '../../lib/types';
 
-const TOKEN = require('../config/super_short.json');
+const TOKEN = require('../../config/mainnet.json');
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: __dirname + '/../../.env' });
 
 /**
  * The network on which the bot runs.
@@ -46,6 +46,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             tokenPath[next],
             network
         );
+
         if (res === null) return {};
 
         gas += res.estimatedGas;
@@ -90,8 +91,8 @@ const main = async () => {
 
     for (let i in TOKEN) {
         if (i === 'WETH') continue;
-        let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
-        let path = [TOKEN[i], TOKEN['WETH']];
+        let input = new BN(1).times(new BN(10).pow(TOKEN['WETH'].decimals));
+        let path = [TOKEN['WETH'], TOKEN[i]];
         let { profit } = await calculateProfit(input, path);
         if (profit && profit.gt(0)) {
             fileContent.push({

@@ -165,7 +165,6 @@ export const getSwapFromDodoApi = async (amountIn: BN, tokenIn: Token, tokenOut:
 }
 export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
     let chainId = '';
-    if (network === 'ropsten') chainId = 'ropsten.';
     if (network === 'polygon') chainId = 'polygon.';
     if (network === 'bsc') chainId = 'bsc.';
     if (network === 'optimism') chainId = 'optimism.';
@@ -193,13 +192,16 @@ export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: Token, tokenOut
  */
 export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
     let chainId = 1;
-    if (network === 'ropsten') chainId = 3;
+    if (network === 'avalanche') chainId = 43114;
     if (network === 'kovan') chainId = 42;
+    if (network === 'bsc') chainId = 56;
+    if (network === 'polygon') chainId = 137;
+    if (network === 'optimism') chainId = 10;
     try {
         const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/quote`, {
             params: {
-                fromTokenAddress: tokenIn,
-                toTokenAddress: tokenOut,
+                fromTokenAddress: tokenIn.address,
+                toTokenAddress: tokenOut.address,
                 amount: amountIn.toFixed()
             }
         });
@@ -221,13 +223,16 @@ export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOu
  */
 export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network, flashswap: string) => {
     let chainId = 1;
-    if (network === 'ropsten') chainId = 3;
+    if (network === 'avalanche') chainId = 43114;
     if (network === 'kovan') chainId = 42;
+    if (network === 'bsc') chainId = 56;
+    if (network === 'polygon') chainId = 137;
+    if (network === 'optimism') chainId = 10;
     try {
         const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/swap`, {
             params: {
-                fromTokenAddress: tokenIn,
-                toTokenAddress: tokenOut,
+                fromTokenAddress: tokenIn.address,
+                toTokenAddress: tokenOut.address,
                 amount: amountIn.toFixed(),
                 fromAddress: flashswap,
                 slippage: 1,
