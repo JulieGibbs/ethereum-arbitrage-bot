@@ -3,10 +3,10 @@ import fs from 'fs';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
+import { getPriceFrom1InchApi, toPrintable } from '../../lib/utils';
 
 // Types
-import { Token, Network, FileContent } from '../lib/types';
+import { Token, Network, FileContent } from '../../lib/types';
 
 const TOKEN = require('../config/super_short.json');
 
@@ -40,18 +40,18 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
-        let res = await getSwapFromZeroXApi(
+        let res = await getPriceFrom1InchApi(
             amountOut[i],
-            tokenPath[i].address,
-            tokenPath[next].address,
+            tokenPath[i],
+            tokenPath[next],
             network
         );
         if (res === null) return {};
-        // console.log(res);
-        gas += parseInt(res.gas);
-        amountOut[i + 1] = new BN(res.buyAmount);
+
+        gas += res.estimatedGas;
+        amountOut[i + 1] = new BN(res.toTokenAmount);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokenPath[next].decimals, fixed);
-        let dexName = res.orders[0].source;
+        let dexName = res.protocols[0][0][0].name;
 
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
 
@@ -60,16 +60,9 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             [dexName]: `${toAmountPrint} ${tokenPath[next].symbol}`
         });
     }
-    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
-        amountIn,
-        tokenPath[0].address,
-        TOKEN.DAI.address,
-        network
-    ) : null;
-    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
-    // console.log(price.toFixed())
-    const profit = amountOut[tokenPath.length].minus(amountIn).minus(feeAmount);
-    const profitUSD = profit.times(price); 
+
+    const profit = amountOut[tokenPath.length].minus(amountOut[0]).minus(feeAmount);
+
     if (profit.isFinite()) {
         table.printTable();
         console.log(
@@ -81,17 +74,12 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
                 profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
             tokenPath[0].symbol,
-            '($',
-            profitUSD.gt(0) ?
-                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
-                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
-            ')',
             '\tEstimate gas:',
             gas,
             '\n'
         );
     }
-    return { profitUSD, table, dexPath };
+    return { profit, table, dexPath };
 }
 
 /**
@@ -103,13 +91,13 @@ const main = async () => {
     for (let i in TOKEN) {
         for (let j in TOKEN) {
             if (i === 'WETH' || 'WETH' === j || j === i) continue;
-            let input = new BN(10).times(new BN(10).pow(TOKEN['WETH'].decimals));
-            let path = [TOKEN['WETH'], TOKEN[i], TOKEN[j]];
-            let { profitUSD } = await calculateProfit(input, path);
-            if (profitUSD && profitUSD.gt(0)) {
+            let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
+            let path = [TOKEN[i], TOKEN['WETH'], TOKEN[j]];
+            let { profit } = await calculateProfit(input, path);
+            if (profit && profit.gt(0)) {
                 fileContent.push({
                     path: path.map(t => t.symbol),
-                    profit: '$' + profitUSD.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
+                    profit: profit.div(new BN(10).pow(path[0].decimals)).toFixed(fixed)
                 });
             }
         }

@@ -3,14 +3,14 @@ import fs from 'fs';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
+import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
 
 // Types
-import { Token, Network, FileContent } from '../lib/types';
+import { Token, Network, FileContent } from '../../lib/types';
 
-const TOKEN = require('../config/mainnet.json');
+const TOKEN = require('../../config/mainnet.json');
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: __dirname + '/../../.env' });
 
 /**
  * The network on which the bot runs.
@@ -40,10 +40,11 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
+        if (!amountOut[i].isFinite()) return{};
         let res = await getSwapFromZeroXApi(
             amountOut[i],
-            tokenPath[i].address,
-            tokenPath[next].address,
+            tokenPath[i],
+            tokenPath[next],
             network
         );
         if (res === null) return {};
@@ -62,12 +63,11 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     }
     let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
         amountIn,
-        tokenPath[0].address,
-        TOKEN.DAI.address,
+        tokenPath[0],
+        TOKEN.DAI,
         network
     ) : null;
     const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
-    // console.log(price.toFixed())
     const profit = amountOut[tokenPath.length].minus(amountIn).minus(feeAmount);
     const profitUSD = profit.times(price); 
     if (profit.isFinite()) {

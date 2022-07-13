@@ -4,26 +4,26 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
-import { getPriceOnUniV2, getSwapOnUniv2 } from '../lib/uniswap/v2/getCalldata';
-import { getPriceOnUniV3, getSwapOnUniv3 } from '../lib/uniswap/v3/getCalldata';
+import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getPriceOnUniV2, getSwapOnUniv2 } from '../../lib/uniswap/v2/getCalldata';
+import { getPriceOnUniV3, getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
 
 // Types
-import { Token, Network, Multicall } from '../lib/types';
+import { Token, Network, Multicall } from '../../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
-import TOKEN from '../config/mainnet.json';
-import DEX from '../config/dexs.json';
+import TOKEN from '../../config/mainnet.json';
+import DEX from '../../config/dexs.json';
 
 // ABIs
-import IContract from '../abi/UniswapFlash1Inch.json';
-import IUniV3Factory from '../abi/UniswapV3Factory.json';
-import un3IQuoter from '../abi/UniswapV3IQuoter.json';
-import un3IRouter from '../abi/UniswapV3Router.json';
-import un2IRouter from '../abi/UniswapV2Router02.json';
-import IMulticall from '../abi/UniswapV3Multicall2.json';
-import IERC20 from '../abi/ERC20.json';
+import IContract from '../../abi/UniswapFlash.json';
+import IUniV3Factory from '../../abi/UniswapV3Factory.json';
+import un3IQuoter from '../../abi/UniswapV3IQuoter.json';
+import un3IRouter from '../../abi/UniswapV3Router.json';
+import un2IRouter from '../../abi/UniswapV2Router02.json';
+import IMulticall from '../../abi/UniswapV3Multicall2.json';
+import IERC20 from '../../abi/ERC20.json';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -263,8 +263,8 @@ const runBot = async (inputAmount: BN) => {
     table.printTable();
     let res = tokens[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
         inputAmount,
-        tokens[0].address,
-        TOKEN.DAI.address,
+        tokens[0],
+        TOKEN.DAI,
         network
     ) : null;
     const price = tokens[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
@@ -334,8 +334,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     }
     let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
         amountIn,
-        tokenPath[0].address,
-        TOKEN.DAI.address,
+        tokenPath[0],
+        TOKEN.DAI,
         network
     ) : null;
     const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);

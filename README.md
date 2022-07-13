@@ -15,20 +15,16 @@ Flashloan Bot Arbitrage Finder
 
 3. Install node modules. Open terminal window and run:
 
-```
-npm install
-```
+    ```
+    npm install
+    ```
 
 4. Run bot
 
-- On mainnet
+- Trade for origin 
     * trader bot
         ```
         yarn main-trader dai weth
-        ```
-    * trader bot for 0x Exchange
-        ```
-        yarn main-trader-zero dai weth
         ```
     * finder2pair bot
         ```
@@ -38,28 +34,30 @@ npm install
         ```
         yarn main-finder3
         ```
-    * finder3pair_zero bot
+- Trade for 0x Exchage API
+    * trader bot bot
         ```
-        yarn main-finder3-zero
-        ```
-    * finder2pair_zero bot
-        ```
-        yarn main-finder3-zero
-        ```
-- On mainnet fork
-    * trader bot
-        ```
-        yarn test-trader dai weth
-        ```
-    * trader bot for 0x Exchange
-        ```
-        yarn test-trader-zero dai weth
+        yarn zero-trader
         ```
     * finder2pair bot
         ```
-        yarn test-finder2
+        yarn zero-finder2
+    * finder3pair bot
         ```
-
+        yarn zero-finder3
+        ```
+- Trade for Dodo Exchage API
+    * trader bot bot
+        ```
+        yarn dodo-trader
+        ```
+    * finder2pair bot
+        ```
+        yarn dodo-finder2
+    * finder3pair bot
+        ```
+        yarn dodo-finder3
+        ```
 
 
 # Developer Instructions - Flashloan

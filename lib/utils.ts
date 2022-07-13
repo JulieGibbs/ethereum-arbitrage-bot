@@ -1,8 +1,9 @@
-import colors from 'colors';
+import * as dotenv from 'dotenv';
 import axios from 'axios';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
-import { Network } from './types';
+import { Network, Token, Tokens } from './types';
+dotenv.config({ path: __dirname + '/../.env' });
 
 /**
  * Get UniswapV2, Sushiswap, Shibaswap quote.
@@ -137,7 +138,32 @@ export const getBalancerQuote = async (amountIn: BN, tokenIn: string, tokenOut: 
         return new BN(-Infinity);
     }
 }
-export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network) => {
+export const getSwapFromDodoApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
+    let chainId, rpcUrl;
+    if (network === 'mainnet') { chainId = 1; rpcUrl = `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`;} 
+    if (network === 'polygon') { chainId = 137; rpcUrl = 'https://polygon-rpc.com';}
+    if (network === 'bsc') { chainId = 56; rpcUrl = 'https://bsc-dataseed.binance.org';}
+    try {
+        const res = await axios.get(`https://route-api.dodoex.io/dodoapi/getdodoroute`, {
+            params: {
+                fromTokenAddress: tokenIn.address,
+                fromTokenDecimals: tokenIn.decimals,
+                toTokenAddress: tokenOut.address,
+                toTokenDecimals: tokenOut.decimals,
+                fromAmount: amountIn.toFixed(),
+                slippage: 1,
+                userAddr: process.env.FORK_CONTRACT_ADDRESS,
+                chainId: chainId,
+                rpc: rpcUrl
+            }
+        });
+        return res.data;
+    }
+    catch (err) {
+        return null;
+    }
+}
+export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
     let chainId = '';
     if (network === 'ropsten') chainId = 'ropsten.';
     if (network === 'polygon') chainId = 'polygon.';
@@ -146,15 +172,14 @@ export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: string, tokenOu
     try {
         const res = await axios.get(`https://${chainId}api.0x.org/swap/v1/quote`, {
             params: {
-                sellToken: tokenIn,
-                buyToken: tokenOut,
+                sellToken: tokenIn.address,
+                buyToken: tokenOut.address,
                 sellAmount: amountIn.toFixed()
             }
         });
         return res.data;
     }
     catch (err) {
-        console.log(err.message);
         return null;
     }
 }
@@ -166,7 +191,7 @@ export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: string, tokenOu
  * @param network Network name.
  * @returns Best dex path and quote.
  */
-export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network) => {
+export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
     let chainId = 1;
     if (network === 'ropsten') chainId = 3;
     if (network === 'kovan') chainId = 42;
@@ -194,7 +219,7 @@ export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenO
  * @param flashswap FlashSwap address.
  * @returns Best dex path and quote.
  */
-export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: string, tokenOut: string, network: Network, flashswap: string) => {
+export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network, flashswap: string) => {
     let chainId = 1;
     if (network === 'ropsten') chainId = 3;
     if (network === 'kovan') chainId = 42;

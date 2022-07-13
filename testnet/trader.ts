@@ -282,10 +282,7 @@ const runBot = async (inputAmount: BN) => {
             'MooniSwap': `${amountPrint[6]} ${tokens[next].symbol}`
         });
     }
-    // console.log(tokenPath);
-    // console.log([inputAmount.toFixed(), '0']);
-    // console.log(routers);
-    // console.log(tradeDatas);
+ 
     table.printTable();
 
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);

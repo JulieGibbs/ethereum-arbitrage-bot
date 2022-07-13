@@ -4,19 +4,19 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
+import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
 // Types
-import { Token, Network, Multicall } from '../lib/types';
+import { Token, Network, Multicall } from '../../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
-import TOKEN from '../config/mainnet.json';
+import TOKEN from '../../config/mainnet.json';
 
 // ABIs
-import IContract from '../abi/UniswapFlash1Inch.json';
-import IERC20 from '../abi/ERC20.json';
-import IUniV3Factory from '../abi/UniswapV3Factory.json';
-dotenv.config({ path: __dirname + '/../.env' });
+import IContract from '../../abi/UniswapFlash.json';
+import IERC20 from '../../abi/ERC20.json';
+import IUniV3Factory from '../../abi/UniswapV3Factory.json';
+dotenv.config({ path: __dirname + '/../../.env' });
 
 /**
  * The network on which the bot runs.
@@ -38,10 +38,10 @@ const loanFee = 0.0005;
  */
 const fixed = 4;
 
-// const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-const web3 = new Web3('http://127.0.0.1:7545');
-const account = web3.eth.accounts.privateKeyToAccount(process.env.FORK_PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
+const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
+// const web3 = new Web3('http://127.0.0.1:7545');
+const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
+const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -112,7 +112,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         gas: 2000000,
         data: init.encodeABI()
     };
-    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.FORK_PRIVATE_KEY!);
+    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
@@ -159,8 +159,8 @@ const runBot = async (inputAmount: BN) => {
         let next = (i + 1) % tokens.length;
         let res = await getSwapFromZeroXApi(
             amountOut[i],
-            tokens[i].address,
-            tokens[next].address,
+            tokens[i],
+            tokens[next],
             network,
         );
         if (res === null) return {};
@@ -179,21 +179,16 @@ const runBot = async (inputAmount: BN) => {
             // 'Estimate Gas': `${gas} Gwei`
         });
     }
-    // console.log(tokenPath);
-    // console.log([inputAmount.toFixed(), '0']);
-    // console.log(routers);
-    // console.log(tradeDatas);
-    // table.addRow({'Estimate Gas': `${gas} Gwei`})
+ 
     table.printTable();
 
     let res = tokens[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
         inputAmount,
-        tokens[0].address,
-        TOKEN.DAI.address,
+        tokens[0],
+        TOKEN.DAI,
         network
     ) : null;
     const price = tokens[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
-    // console.log(price.toFixed())
     const profit = amountOut[tokenPath.length].minus(inputAmount).minus(feeAmount);
     const profitUSD = profit.times(price); 
     console.log(

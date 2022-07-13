@@ -155,8 +155,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     }
     let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
         amountIn,
-        tokenPath[0].address,
-        TOKEN.DAI.address,
+        tokenPath[0],
+        TOKEN.DAI,
         network
     ) : null;
     const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);

@@ -4,18 +4,19 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
+import { getSwapFrom1InchApi, toPrintable } from '../../lib/utils';
+
 // Types
-import { Token, Network, Multicall } from '../lib/types';
+import { Token, Network, Multicall } from '../../lib/types';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
-import TOKEN from '../config/mainnet.json';
+import TOKEN from '../../config/mainnet.json';
 
 // ABIs
-import IContract from '../abi/UniswapFlash1Inch.json';
-import IERC20 from '../abi/ERC20.json';
-import IUniV3Factory from '../abi/UniswapV3Factory.json';
+import IContract from '../../abi/UniswapFlash.json';
+import IERC20 from '../../abi/ERC20.json';
+import IUniV3Factory from '../../abi/UniswapV3Factory.json';
 dotenv.config({ path: __dirname + '/../.env' });
 
 /**
@@ -39,12 +40,12 @@ const loanFee = 0.0005;
 const fixed = 4;
 
 const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-// const web3 = new Web3('http://127.0.0.1:7545');
 const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
 const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
 const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
+
 /**
  * Print balance of wallet.
  */
@@ -52,6 +53,7 @@ const printAccountBalance = async () => {
     const table = new Table();
     const row = { 'Token': 'Balance' };
 
+    console.log(account);
     let ethBalance = await web3.eth.getBalance(account);
     row['ETH'] = toPrintable(new BN(ethBalance), 18, fixed);
 
@@ -68,6 +70,10 @@ const printAccountBalance = async () => {
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
 
+/**
+ * Get maximum loanable amount from pool.
+ * @returns Max loanable amount.
+ */
 const maxFlashamount = async () => {
     let otherToken = tokens[0].address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
 
@@ -78,9 +84,67 @@ const maxFlashamount = async () => {
         return maxAmount;
     } catch (err){
         console.log('Flash pool is not exist!');
-        // return {};
+        return null;
     }
 }
+
+/**
+ * Call appoveToken function of flashswap contract.
+ * @param flashswap Flashswap contract.
+ * @param token Token to approve
+ */
+const approveToken = async (flashswap: Contract, token: Token) => {
+    const method = flashswap.methods.approveToken(token.address);
+    const encoded = method.encodeABI();
+
+    const tx = {
+        from: account,
+        to: flashSwap.options.address,
+        gas: 80000,
+        data: encoded
+    };
+    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
+
+    const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+    console.log(`Transaction hash: ${receipt.transactionHash}`);
+}
+
+/**
+ * Check if 1inch router is approved to use asset of flashswap.
+ */
+const checkApproval = async () => {
+    console.log('Checking allowance...');
+    const promises = tokenContract.map(
+        contract => contract.methods.allowance(
+            process.env.MAINNET_CONTRACT_ADDRESS,
+            process.env.ONEINCH_ROUTER_ADDRESS
+        ).call()
+    );
+    const results: string[] = await Promise.all(promises);
+
+    const minAmount = new BN('0xfffffffffffffffffffffff');
+    const _token: Token[] = [];
+    tokens.forEach((token, i) => {
+        let result = new BN(results[i]);
+        if (result.lt(minAmount)) {
+            console.log(`Allowance of ${token.symbol.yellow} is not enough!`);
+            _token.push(token);
+        }
+    });
+
+    if (!_token.length) return;
+
+    let response = await inquirer.prompt([{
+        type: 'input',
+        name: 'isExe',
+        message: `Would you like to approve token? (yes/no)`
+    }]);
+
+    if (response.isExe !== 'yes') process.exit();
+
+    for (let i = 0; i < _token.length; i++) await approveToken(flashSwap, _token[i]);
+}
+
 /**
  * Swap tokens on contract.
  * @param loanToken Address of token to loan.
@@ -88,9 +152,9 @@ const maxFlashamount = async () => {
  * @param tradePath Array of address to trade.
  * @param dexPath Array of dex index.
  */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], spenders: string[], routers: string[], tradeDatas: string[]) => {
+const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], routers: string[], tradeDatas: string[]) => {
     console.log('Swapping ...');
-    if (tokenPath.length != routers.length || tokenPath.length != tradeDatas.length) {
+    if (tokenPath.length != tradeDatas.length) {
         console.log('Swap data is not correct!')
         return {};
     }
@@ -100,7 +164,6 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         loanTokens,
         loanAmounts,
         tokenPath,
-        spenders,
         routers,
         tradeDatas
     );
@@ -109,14 +172,14 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         from: account,
         to: flashSwap.options.address,
         nonce: nonce,
-        gas: 2000000,
+        gas: 200000,
         data: init.encodeABI()
     };
     const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
-        console.log(`Transaction hash: https://etherscan.io/tx/${receipt.transactionHash}`);
+        console.log(`Transaction hash: ${receipt.transactionHash}`);
     }
     catch (err) {
         console.log(err);
@@ -147,7 +210,6 @@ const initTokenContract = async () => {
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
     const tokenPath: string[] = tokens.map(_token => _token.address);
-    const spenders: string[] = [];
     const routers: string[] = [];
     const tradeDatas: string[] = [];
     const amountOut: BN[] = [];
@@ -157,19 +219,19 @@ const runBot = async (inputAmount: BN) => {
     let gas: BN = new BN(0), gasPrice: BN = new BN(0);
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
-        let res = await getSwapFromZeroXApi(
+        let res = await getSwapFrom1InchApi(
             amountOut[i],
-            tokens[i].address,
-            tokens[next].address,
+            tokens[i],
+            tokens[next],
             network,
+            flashSwap.options.address
         );
         if (res === null) return {};
-        gas = new BN(res.gas).times(new BN(res.gasPrice));
-        amountOut[i + 1] = new BN(res.buyAmount);
-        let dexName = res.orders[0].source;
-        spenders.push(res.allowanceTarget);
-        routers.push(res.to);
-        tradeDatas.push(res.data);
+        gas = new BN(res.tx.gas).times(res.tx.gasPrice);
+        amountOut[i + 1] = new BN(res.toTokenAmount);
+        let dexName = res.protocols[0][0][0].name;
+        routers.push(res.tx.to);
+        tradeDatas.push(res.tx.data);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
         let amountInPrint = toPrintable(amountOut[i], tokens[i].decimals, fixed);
 
@@ -186,16 +248,7 @@ const runBot = async (inputAmount: BN) => {
     // table.addRow({'Estimate Gas': `${gas} Gwei`})
     table.printTable();
 
-    let res = tokens[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
-        inputAmount,
-        tokens[0].address,
-        TOKEN.DAI.address,
-        network
-    ) : null;
-    const price = tokens[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
-    // console.log(price.toFixed())
-    const profit = amountOut[tokenPath.length].minus(inputAmount).minus(feeAmount);
-    const profitUSD = profit.times(price); 
+    const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
     console.log(
         'Input:',
         toPrintable(inputAmount, tokens[0].decimals, fixed),
@@ -204,12 +257,7 @@ const runBot = async (inputAmount: BN) => {
         profit.gt(0) ?
             profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
             profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        tokens[0].symbol,
-        '($',
-            profitUSD.gt(0) ?
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        ')'
+        tokens[0].symbol
     );
     if (profit.gt(0)) {
         let response = await inquirer.prompt([{
@@ -217,7 +265,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, spenders, routers, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, routers, tradeDatas);
     }
 }
 
@@ -240,6 +288,7 @@ const main = async () => {
     });
 
     await initTokenContract();
+    // await checkApproval();
     while (true) {
         let response = await inquirer.prompt([{
             type: 'input',

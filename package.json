@@ -4,14 +4,15 @@
   "description": "Flashloan Bot Arbitrage Finder",
   "main": "bot.js",
   "scripts": {
-    "main-finder2": "npx ts-node mainnet/finder2pair",
-    "main-finder2-zero": "npx ts-node mainnet/finder2pair_zero",
-    "main-finder3": "npx ts-node mainnet/finder3pair",
-    "main-finder3-zero": "npx ts-node mainnet/finder3pair_zero",
-    "main-trader": "npx ts-node mainnet/mainnet",
-    "main-trader-zero": "npx ts-node mainnet/trader_zero",
-    "test-finder2": "npx ts-node testnet/finder2pair",
-    "test-trader": "npx ts-node testnet/trader",
+    "main-finder2": "npx ts-node mainnet/origin/finder2pair",
+    "main-finder3": "npx ts-node mainnet/origin/finder3pair",
+    "main-trader": "npx ts-node mainnet/origin/trader",
+    "zero-finder2": "npx ts-node mainnet/zero/finder2pair",
+    "zero-finder3": "npx ts-node mainnet/zero/finder3pair",
+    "zero-trader": "npx ts-node mainnet/zero/trader",
+    "dodo-finder2": "npx ts-node mainnet/dodo/finder2pair",
+    "dodo-finder3": "npx ts-node mainnet/dodo/finder3pair",
+    "dodo-trader": "npx ts-node mainnet/dodo/trader",
     "test-trader-zero": "npx ts-node testnet/trader_zero"
   },
   "keywords": [

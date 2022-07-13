@@ -4,27 +4,27 @@ import Web3 from 'web3';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../lib/utils';
-import { getPriceOnUniV2 } from '../lib/uniswap/v2/getCalldata';
-import { getPriceOnUniV3 } from '../lib/uniswap/v3/getCalldata';
-import { getPriceOnOneSplit } from '../lib/oneinch/onesplit/getCalldata';
-import { getMooniSwap, getPriceOnMooni } from '../lib/mooniswap/getCalldata';
+import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
+import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
+import { getPriceOnOneSplit } from '../../lib/oneinch/onesplit/getCalldata';
+import { getMooniSwap, getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 // Types
-import { Token, Network, FileContent, Multicall } from '../lib/types';
+import { Token, Network, FileContent, Multicall } from '../../lib/types';
 import { AbiItem } from 'web3-utils';
 
-import TOKEN from '../config/mainnet.json';
-import DEX from '../config/dexs.json';
+import TOKEN from '../../config/mainnet.json';
+import DEX from '../../config/dexs.json';
 
 // ABIs
-import un3IQuoter from '../abi/UniswapV3IQuoter.json';
-import un2IRouter from '../abi/UniswapV2Router02.json';
-import osIRouter from '../abi/OneSplit.json';
-import msIFactory from '../abi/MooniFactory.json';
-import bsIRouter from '../abi/BalancerVault.json';
+import un3IQuoter from '../../abi/UniswapV3IQuoter.json';
+import un2IRouter from '../../abi/UniswapV2Router02.json';
+import osIRouter from '../../abi/OneSplit.json';
+import msIFactory from '../../abi/MooniFactory.json';
+import bsIRouter from '../../abi/BalancerVault.json';
 // import kbIQuoter from '../abi/KyberQuoter.json';
 
-import IMulticall from '../abi/UniswapV3Multicall2.json';
+import IMulticall from '../../abi/UniswapV3Multicall2.json';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -155,8 +155,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     }
     let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
         amountIn,
-        tokenPath[0].address,
-        TOKEN.DAI.address,
+        tokenPath[0],
+        TOKEN.DAI,
         network
     ) : null;
     const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
