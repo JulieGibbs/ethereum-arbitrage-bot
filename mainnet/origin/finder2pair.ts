@@ -4,7 +4,7 @@ import Web3 from 'web3';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getPriceOnOracle, toPrintable } from '../../lib/utils';
 import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
 import { getPriceOnOneSplit } from '../../lib/oneinch/onesplit/getCalldata';
@@ -25,7 +25,6 @@ import bsIRouter from '../../abi/BalancerVault.json';
 // import kbIQuoter from '../abi/KyberQuoter.json';
 
 import IMulticall from '../../abi/UniswapV3Multicall2.json';
-
 dotenv.config({ path: __dirname + '/../.env' });
 
 /**
@@ -153,13 +152,10 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             // 'MooniSwap': `${amountPrint[6]} ${tokenPath[next].symbol}`
         });
     }
-    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
-        amountIn,
+    let price = tokenPath[0].symbol != TOKEN.USDT.symbol ? await getPriceOnOracle(
         tokenPath[0],
-        TOKEN.DAI,
-        network
-    ) : null;
-    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
+        TOKEN.USDT,
+    ) : new BN(1);
     const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price); 
     if (profit.isFinite()) {

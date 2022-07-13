@@ -3,7 +3,7 @@ import fs from 'fs';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getPriceOnOracle, getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
 
 // Types
 import { Token, Network, FileContent } from '../../lib/types';
@@ -61,13 +61,10 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             [dexName]: `${toAmountPrint} ${tokenPath[next].symbol}`
         });
     }
-    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
-        amountIn,
+    let price = tokenPath[0].symbol != TOKEN.USDT.symbol ? await getPriceOnOracle(
         tokenPath[0],
-        TOKEN.DAI,
-        network
-    ) : null;
-    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
+        TOKEN.USDT,
+    ) : new BN(1);
     const profit = amountOut[tokenPath.length].minus(amountIn).minus(feeAmount);
     const profitUSD = profit.times(price); 
     if (profit.isFinite()) {

@@ -4,7 +4,7 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getPriceOnOracle, getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
 // Types
 import { Token, Network, Multicall } from '../../lib/types';
 import { AbiItem } from 'web3-utils';
@@ -182,13 +182,10 @@ const runBot = async (inputAmount: BN) => {
  
     table.printTable();
 
-    let res = tokens[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
-        inputAmount,
+    let price = tokens[0].symbol != TOKEN.USDT.symbol ? await getPriceOnOracle(
         tokens[0],
-        TOKEN.DAI,
-        network
-    ) : null;
-    const price = tokens[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
+        TOKEN.USDT,
+    ) : new BN(1);
     const profit = amountOut[tokenPath.length].minus(inputAmount).minus(feeAmount);
     const profitUSD = profit.times(price); 
     console.log(

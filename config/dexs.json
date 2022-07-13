@@ -50,6 +50,10 @@
         "OneSlpit": {
             "id": 10,
             "Router": "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
+        },
+        "OneInchOracle": {
+            "id": 16,
+            "oracle": "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb"
         }
     },
     "kovan": {

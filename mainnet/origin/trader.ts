@@ -4,7 +4,7 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getPriceOnOracle, toPrintable } from '../../lib/utils';
 import { getPriceOnUniV2, getSwapOnUniv2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3, getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
 
@@ -261,13 +261,10 @@ const runBot = async (inputAmount: BN) => {
     // console.log(routers);
     // console.log(tradeDatas);
     table.printTable();
-    let res = tokens[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
-        inputAmount,
+    let price = tokens[0].symbol != TOKEN.USDT.symbol ? await getPriceOnOracle(
         tokens[0],
-        TOKEN.DAI,
-        network
-    ) : null;
-    const price = tokens[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
+        TOKEN.USDT,
+    ) : new BN(1);
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price); 
     console.log(
@@ -332,17 +329,11 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         // }
 
     }
-    let res = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getSwapFromZeroXApi(
-        amountIn,
-        tokenPath[0],
-        TOKEN.DAI,
-        network
-    ) : null;
-    const price = tokenPath[0].symbol != TOKEN.DAI.symbol ? new BN(res.price) : new BN(1);
-    const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
-    const profitUSD = profit.times(price); 
     
-    return { profitUSD, dexPath };
+    const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
+    
+    
+    return { profit, dexPath };
 }
 const getOptiInput = () => {
 

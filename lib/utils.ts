@@ -1,9 +1,17 @@
 import * as dotenv from 'dotenv';
 import axios from 'axios';
+import Web3 from 'web3';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
-import { Network, Token, Tokens } from './types';
+import { Network, Token } from './types';
+import { AbiItem } from 'web3-utils';
+import DEX from '../config/dexs.json';
+import IOracle from '../abi/OffchainOracle.json';
+
 dotenv.config({ path: __dirname + '/../.env' });
+const network: Network = 'mainnet';
+const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
+const offchainOracle = new web3.eth.Contract(IOracle.abi as AbiItem[], DEX[network].OneInchOracle.oracle);
 
 /**
  * Get UniswapV2, Sushiswap, Shibaswap quote.
@@ -19,6 +27,17 @@ export const getUniswapQuote = async (amountIn: BN, tokenIn: string, tokenOut: s
         return new BN(amountOuts[1]);
     }
     catch (err) {
+        return new BN(-Infinity);
+    }
+}
+export const getPriceOnOracle = async (srcToken: Token, dstToken: Token) => {
+    try {
+        let price = await offchainOracle.methods.getRate(srcToken.address, dstToken.address, false).call();
+        return new BN(price).div(new BN(10).pow(dstToken.decimals));
+    }
+    catch (err) {
+        // console.log(err);
+
         return new BN(-Infinity);
     }
 }
