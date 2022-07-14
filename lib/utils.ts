@@ -1,17 +1,9 @@
-import * as dotenv from 'dotenv';
 import axios from 'axios';
-import Web3 from 'web3';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { Network, Token } from './types';
-import { AbiItem } from 'web3-utils';
-import DEX from '../config/dexs.json';
-import IOracle from '../abi/OffchainOracle.json';
-
-dotenv.config({ path: __dirname + '/../.env' });
-const network: Network = 'mainnet';
-const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-const offchainOracle = new web3.eth.Contract(IOracle.abi as AbiItem[], DEX[network].OneInchOracle.oracle);
+import { flashSwap, offchainOracle } from './contracts';
+import { RPC_URL } from './rpcURLs'; 
 
 /**
  * Get UniswapV2, Sushiswap, Shibaswap quote.
@@ -32,8 +24,11 @@ export const getUniswapQuote = async (amountIn: BN, tokenIn: string, tokenOut: s
 }
 export const getPriceOnOracle = async (srcToken: Token, dstToken: Token) => {
     try {
+        if (srcToken.symbol === dstToken.symbol) return new BN(1);
         let price = await offchainOracle.methods.getRate(srcToken.address, dstToken.address, false).call();
-        return new BN(price).div(new BN(10).pow(dstToken.decimals));
+        if (srcToken.symbol == 'USDC') return new BN(price).div(new BN(10).pow(18));
+        if (srcToken.symbol == 'WBTC') return new BN(price).div(new BN(10).pow(16));
+        return new BN(price).div(new BN(10).pow(dstToken.decimals));            
     }
     catch (err) {
         // console.log(err);
@@ -158,10 +153,6 @@ export const getBalancerQuote = async (amountIn: BN, tokenIn: string, tokenOut: 
     }
 }
 export const getSwapFromDodoApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
-    let chainId, rpcUrl;
-    if (network === 'mainnet') { chainId = 1; rpcUrl = `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`;} 
-    if (network === 'polygon') { chainId = 137; rpcUrl = 'https://polygon-rpc.com';}
-    if (network === 'bsc') { chainId = 56; rpcUrl = 'https://bsc-dataseed.binance.org';}
     try {
         const res = await axios.get(`https://route-api.dodoex.io/dodoapi/getdodoroute`, {
             params: {
@@ -171,9 +162,9 @@ export const getSwapFromDodoApi = async (amountIn: BN, tokenIn: Token, tokenOut:
                 toTokenDecimals: tokenOut.decimals,
                 fromAmount: amountIn.toFixed(),
                 slippage: 1,
-                userAddr: process.env.FORK_CONTRACT_ADDRESS,
-                chainId: chainId,
-                rpc: rpcUrl
+                userAddr: flashSwap.options.address,
+                chainId: RPC_URL[network].id,
+                rpc: RPC_URL[network].url
             }
         });
         return res.data;
@@ -210,14 +201,9 @@ export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: Token, tokenOut
  * @returns Best dex path and quote.
  */
 export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
-    let chainId = 1;
-    if (network === 'avalanche') chainId = 43114;
-    if (network === 'kovan') chainId = 42;
-    if (network === 'bsc') chainId = 56;
-    if (network === 'polygon') chainId = 137;
-    if (network === 'optimism') chainId = 10;
+    
     try {
-        const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/quote`, {
+        const res = await axios.get(`https://api.1inch.exchange/v4.0/${RPC_URL[network].id}/quote`, {
             params: {
                 fromTokenAddress: tokenIn.address,
                 toTokenAddress: tokenOut.address,
@@ -241,14 +227,9 @@ export const getPriceFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOu
  * @returns Best dex path and quote.
  */
 export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network, flashswap: string) => {
-    let chainId = 1;
-    if (network === 'avalanche') chainId = 43114;
-    if (network === 'kovan') chainId = 42;
-    if (network === 'bsc') chainId = 56;
-    if (network === 'polygon') chainId = 137;
-    if (network === 'optimism') chainId = 10;
+    
     try {
-        const res = await axios.get(`https://api.1inch.exchange/v4.0/${chainId}/swap`, {
+        const res = await axios.get(`https://api.1inch.exchange/v4.0/${RPC_URL[network].id}/swap`, {
             params: {
                 fromTokenAddress: tokenIn.address,
                 toTokenAddress: tokenOut.address,

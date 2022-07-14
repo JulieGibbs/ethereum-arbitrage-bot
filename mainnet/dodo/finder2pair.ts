@@ -1,31 +1,13 @@
-import * as dotenv from 'dotenv';
 import fs from 'fs';
 import 'colors';
+import { network, loanFee, fixed } from '../../lib/config';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { getSwapFromDodoApi, toPrintable } from '../../lib/utils';
+import { getPriceOnOracle, getSwapFromDodoApi, toPrintable } from '../../lib/utils';
 
 // Types
-import { Token, Network, FileContent } from '../../lib/types';
-
-const TOKEN = require('../../config/mainnet.json');
-
-dotenv.config({ path: __dirname + '/../../.env' });
-
-/**
- * The network on which the bot runs.
- */
-const network: Network = 'mainnet';
-
-/**
- * Flashloan fee.
- */
-const loanFee = 0.0005;
-
-/**
- * Token price floating-point digit.
- */
-const fixed = 4;
+import { Token, FileContent } from '../../lib/types';
+import TOKEN from '../../config/mainnet.json';
 
 const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);

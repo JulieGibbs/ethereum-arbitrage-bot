@@ -1,31 +1,13 @@
-import * as dotenv from 'dotenv';
 import fs from 'fs';
 import 'colors';
+import { network, loanFee, fixed } from '../../lib/config';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
 import { getPriceOnOracle, getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import TOKEN from '../../config/mainnet.json';
 
 // Types
-import { Token, Network, FileContent } from '../../lib/types';
-
-const TOKEN = require('../../config/super_short.json');
-
-dotenv.config({ path: __dirname + '/../../.env' });
-
-/**
- * The network on which the bot runs.
- */
-const network: Network = 'mainnet';
-
-/**
- * Flashloan fee.
- */
-const loanFee = 0.0005;
-
-/**
- * Token price floating-point digit.
- */
-const fixed = 4;
+import { Token, FileContent } from '../../lib/types';
 
 const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);
@@ -61,10 +43,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             [dexName]: `${toAmountPrint} ${tokenPath[next].symbol}`
         });
     }
-    let price = tokenPath[0].symbol != TOKEN.USDT.symbol ? await getPriceOnOracle(
-        tokenPath[0],
-        TOKEN.USDT,
-    ) : new BN(1);
+    const price = await getPriceOnOracle(tokenPath[0], TOKEN.USDT);
     const profit = amountOut[tokenPath.length].minus(amountIn).minus(feeAmount);
     const profitUSD = profit.times(price); 
     if (profit.isFinite()) {

@@ -1,51 +1,18 @@
-import * as dotenv from 'dotenv';
-import Web3 from 'web3';
+import BN from 'bignumber.js';
 import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
-import BN from 'bignumber.js';
-import { getSwapFrom1InchApi, toPrintable } from '../../lib/utils';
-
+import { web3, account, network, loanFee, fixed } from '../../lib/config';
+import { getPriceOnOracle, getSwapFrom1InchApi, toPrintable } from '../../lib/utils';
 // Types
-import { Token, Network, Multicall } from '../../lib/types';
-import { AbiItem } from 'web3-utils';
+import { Token } from '../../lib/types';
 import { Contract } from 'web3-eth-contract';
 
+import { getMaxFlashAmount } from '../../lib/uniswap/v3/getCalldata';
+import { flashSwap, getERC20Contract } from '../../lib/contracts';
 import TOKEN from '../../config/mainnet.json';
 
-// ABIs
-import IContract from '../../abi/UniswapFlash.json';
-import IERC20 from '../../abi/ERC20.json';
-import IUniV3Factory from '../../abi/UniswapV3Factory.json';
-dotenv.config({ path: __dirname + '/../.env' });
-
-/**
- * The network on which the bot runs.
- */
-const network: Network = 'mainnet';
-
-/**
- * Initial amount of token.
- */
-// const initial = 1;
-let maxInputAmount;
-/**
- * Flashloan fee.
- */
-const loanFee = 0.0005;
-
-/**
- * Token price floating-point digit.
- */
-const fixed = 4;
-
-// const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-// const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
-// const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
-const web3 = new Web3('http://127.0.0.1:7545');
-const account = web3.eth.accounts.privateKeyToAccount(process.env.FORK_PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
-const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
+let maxInputAmount: BN;
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
 
@@ -56,39 +23,20 @@ const printAccountBalance = async () => {
     const table = new Table();
     const row = { 'Token': 'Balance' };
 
-    console.log(account);
-    let ethBalance = await web3.eth.getBalance(account);
+    let ethBalance = await web3.eth.getBalance(account.address);
     row['ETH'] = toPrintable(new BN(ethBalance), 18, fixed);
 
-    let promises = tokens.map((t, i) => tokenContract[i].methods.balanceOf(account).call());
+    let promises = tokens.map((t, i) => tokenContract[i].methods.balanceOf(account.address).call());
     let balances: string[] = await Promise.all(promises);
     balances.forEach((bal, i) => {
         row[tokens[i].symbol] = toPrintable(new BN(bal), tokens[i].decimals, fixed);
     });
     table.addRow(row);
     table.printTable();
-    maxInputAmount = await maxFlashamount();
+    maxInputAmount = await getMaxFlashAmount(tokenContract[0]);
     if (maxInputAmount !== undefined)
         console.log(`Max flash loan amount of ${tokens[0].symbol} is ${toPrintable(maxInputAmount, tokens[0].decimals, fixed)}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
-}
-
-/**
- * Get maximum loanable amount from pool.
- * @returns Max loanable amount.
- */
-const maxFlashamount = async () => {
-    let otherToken = tokens[0].address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
-
-    try {
-        const flashPool = await flashFactory.methods.getPool(tokens[0].address, otherToken, 500).call();
-        const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
-        const maxAmount = balance ? new BN(balance) : new BN(0);
-        return maxAmount;
-    } catch (err){
-        console.log('Flash pool is not exist!');
-        return null;
-    }
 }
 
 /**
@@ -101,12 +49,12 @@ const approveToken = async (flashswap: Contract, token: Token) => {
     const encoded = method.encodeABI();
 
     const tx = {
-        from: account,
+        from: account.address,
         to: flashSwap.options.address,
         gas: 80000,
         data: encoded
     };
-    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
+    const signedTx = await account.signTransaction(tx);
 
     const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
     console.log(`Transaction hash: ${receipt.transactionHash}`);
@@ -170,15 +118,15 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         routers,
         tradeDatas
     );
-    const nonce = await web3.eth.getTransactionCount(account);
+    const nonce = await web3.eth.getTransactionCount(account.address);
     const tx = {
-        from: account,
+        from: account.address,
         to: flashSwap.options.address,
         nonce: nonce,
         gas: 200000,
         data: init.encodeABI()
     };
-    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
+    const signedTx = await account.signTransaction(tx);
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
@@ -199,7 +147,7 @@ const initTokenContract = async () => {
     console.log();
     // Initialize token contracts and decimals.
     tokens.forEach((_token) => {
-        tokenContract.push(new web3.eth.Contract(IERC20.abi as AbiItem[], _token.address));
+        tokenContract.push(getERC20Contract(_token.address));
     });
 
     await printAccountBalance();

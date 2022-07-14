@@ -1,65 +1,24 @@
 import * as dotenv from 'dotenv';
-import Web3 from 'web3';
+import { web3, network, account, loanFee, fixed } from '../../lib/config';
 import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
+import { dfRouter, flashFactory, flashSwap, getERC20Contract, multicall, shRouter, suRouter, un2Router, un3Quoter, un3Router } from '../../lib/contracts';
 import { getPriceOnOracle, toPrintable } from '../../lib/utils';
-import { getPriceOnUniV2, getSwapOnUniv2 } from '../../lib/uniswap/v2/getCalldata';
-import { getPriceOnUniV3, getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
+import { getPriceOnUniV2, getSwapOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
+import { getPriceOnUniV3, getSwapOnUniv3, getMaxFlashAmount } from '../../lib/uniswap/v3/getCalldata';
 
 // Types
-import { Token, Network, Multicall } from '../../lib/types';
-import { AbiItem } from 'web3-utils';
+import { Token, Multicall } from '../../lib/types';
 import { Contract } from 'web3-eth-contract';
 
 import TOKEN from '../../config/mainnet.json';
-import DEX from '../../config/dexs.json';
 
-// ABIs
-import IContract from '../../abi/UniswapFlash.json';
-import IUniV3Factory from '../../abi/UniswapV3Factory.json';
-import un3IQuoter from '../../abi/UniswapV3IQuoter.json';
-import un3IRouter from '../../abi/UniswapV3Router.json';
-import un2IRouter from '../../abi/UniswapV2Router02.json';
-import IMulticall from '../../abi/UniswapV3Multicall2.json';
-import IERC20 from '../../abi/ERC20.json';
+dotenv.config({ path: __dirname + '/../../.env' });
 
-dotenv.config({ path: __dirname + '/../.env' });
+let maxInputAmount: BN;
 
-/**
- * The network on which the bot runs.
- */
-const network: Network = 'mainnet';
-
-/**
- * Initial amount of token.
- */
-// const initial = 1;
-let maxInputAmount;
-/**
- * Flashloan fee.
- */
-const loanFee = 0.0005;
-
-/**
- * Token price floating-point digit.
- */
-const fixed = 4;
-
-const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-const account = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY!).address;
-const flashSwap = new web3.eth.Contract(IContract.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
-const flashFactory = new web3.eth.Contract(IUniV3Factory.abi as AbiItem[], process.env.UNIV3FACTORY);
-
-const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
-const un3Router = new web3.eth.Contract(un3IRouter.abi as AbiItem[], DEX[network].UniswapV3.Router);
-const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
-const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
-const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
-const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
-
-const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
 const tokens: Token[] = [];
 const tokenContract: Contract[] = [];
@@ -71,10 +30,10 @@ const printAccountBalance = async () => {
     const table = new Table();
     const row = { 'Token': 'Balance' };
 
-    let ethBalance = await web3.eth.getBalance(account);
+    let ethBalance = await web3.eth.getBalance(account.address);
     row['ETH'] = toPrintable(new BN(ethBalance), 18, fixed);
 
-    let promises = tokens.map((t, i) => tokenContract[i].methods.balanceOf(account).call());
+    let promises = tokens.map((t, i) => tokenContract[i].methods.balanceOf(account.address).call());
     let balances: string[] = await Promise.all(promises);
     balances.forEach((bal, i) => {
         row[tokens[i].symbol] = toPrintable(new BN(bal), tokens[i].decimals, fixed);
@@ -82,24 +41,12 @@ const printAccountBalance = async () => {
 
     table.addRow(row);
     table.printTable();
-    maxInputAmount = await maxFlashamount();
+    maxInputAmount = await getMaxFlashAmount(tokenContract[0]);
     if (maxInputAmount !== undefined)
         console.log(`Max flash loan amount of ${tokens[0].symbol} is ${toPrintable(maxInputAmount, tokens[0].decimals, fixed)}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
 }
-const maxFlashamount = async () => {
-    let otherToken = tokens[0].address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
 
-    try {
-        const flashPool = await flashFactory.methods.getPool(tokens[0].address, otherToken, 500).call();
-        const balance = await tokenContract[0].methods.balanceOf(flashPool).call();
-        const maxAmount = balance ? new BN(balance) : new BN(0);
-        return maxAmount;
-    } catch (err){
-        console.log('Flash pool is not exist!');
-        // return {};
-    }
-}
 /**
  * Calculate dexes quote.
  * @param amountIn Input amount of token.
@@ -111,7 +58,7 @@ const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => 
     const calls = [];
     const amountInString = amountIn.toFixed();
 
-    const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
+    const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
@@ -149,7 +96,7 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
     }
     const loanTokens = loanToken === TOKEN.WETH.address ? [TOKEN.DAI.address, loanToken] : [loanToken, TOKEN.WETH.address];
     const loanAmounts = loanToken === TOKEN.WETH.address ? ['0', loanAmount.toFixed()] : [loanAmount.toFixed(), '0']
-    const init = flashSwap.methods.initUniFlashSwap(
+    const init = flashFactory.methods.initUniFlashSwap(
         loanTokens,
         loanAmounts,
         tokenPath,
@@ -158,12 +105,12 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         tradeDatas
     );
     const tx = {
-        from: account,
+        from: account.address,
         to: flashSwap.options.address,
         gas: 2000000,
         data: init.encodeABI()
     };
-    const signedTx = await web3.eth.accounts.signTransaction(tx, process.env.PRIVATE_KEY!);
+    const signedTx = await account.signTransaction(tx);
 
     try {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
@@ -184,7 +131,7 @@ const initTokenContract = async () => {
     console.log();
     // Initialize token contracts and decimals.
     tokens.forEach((_token) => {
-        tokenContract.push(new web3.eth.Contract(IERC20.abi as AbiItem[], _token.address));
+        tokenContract.push(getERC20Contract(_token.address));
     });
 
     await printAccountBalance();
@@ -220,31 +167,31 @@ const runBot = async (inputAmount: BN) => {
             amountPrint[0] = amountPrint[0].underline;
             spenders.push(un3Router.options.address);
             routers.push(un3Router.options.address);
-            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un3Router));
+            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             amountPrint[1] = amountPrint[1].underline;
             spenders.push(un2Router.options.address);
             routers.push(un2Router.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             amountPrint[2] = amountPrint[2].underline;
             spenders.push(suRouter.options.address);
             routers.push(suRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
             amountPrint[3] = amountPrint[3].underline;
             spenders.push(shRouter.options.address);
             routers.push(shRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             amountPrint[4] = amountPrint[4].underline;
             spenders.push(dfRouter.options.address);
             routers.push(dfRouter.options.address);
-            tradeDatas.push(getSwapOnUniv2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
         }
         
         table.addRow({
@@ -261,10 +208,7 @@ const runBot = async (inputAmount: BN) => {
     // console.log(routers);
     // console.log(tradeDatas);
     table.printTable();
-    let price = tokens[0].symbol != TOKEN.USDT.symbol ? await getPriceOnOracle(
-        tokens[0],
-        TOKEN.USDT,
-    ) : new BN(1);
+    const price = await getPriceOnOracle(tokens[0], TOKEN.USDT);
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price); 
     console.log(

@@ -1,62 +1,19 @@
-import * as dotenv from 'dotenv';
 import fs from 'fs';
-import Web3 from 'web3';
+import { web3, network, loanFee, fixed } from '../../lib/config';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
+import { dfRouter, multicall, shRouter, suRouter, un2Router, un3Quoter } from '../../lib/contracts';
 import { getPriceOnOracle, toPrintable } from '../../lib/utils';
 import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
 import { getPriceOnOneSplit } from '../../lib/oneinch/onesplit/getCalldata';
 import { getMooniSwap, getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 // Types
-import { Token, Network, FileContent, Multicall } from '../../lib/types';
-import { AbiItem } from 'web3-utils';
+import { Token, FileContent, Multicall } from '../../lib/types';
 
 import TOKEN from '../../config/super_short.json';
-import DEX from '../../config/dexs.json';
 
-// ABIs
-import un3IQuoter from '../../abi/UniswapV3IQuoter.json';
-import un2IRouter from '../../abi/UniswapV2Router02.json';
-import shIRouter from '../../abi/UniswapV2Router02.json';
-import dfIRouter from '../../abi/UniswapV2Router02.json';
-import osIRouter from '../../abi/OneSplit.json';
-import msIFactory from '../../abi/MooniFactory.json';
-// import bsIRouter from '../abi/BalancerVault.json';
-// import kbIQuoter from '../abi/KyberQuoter.json';
-
-import IMulticall from '../../abi/UniswapV3Multicall2.json';
-dotenv.config({ path: __dirname + '/../.env' });
-
-/**
- * The network on which the bot runs.
- */
-const network: Network = 'mainnet';
-
-/**
- * Flashloan fee.
- */
-const loanFee = 0.0005;
-
-/**
- * Token price floating-point digit.
- */
-const fixed = 4;
-
-const web3 = new Web3(`https://${network}.infura.io/v3/${process.env.INFURA_KEY}`);
-
-const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
-const un2Router = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
-const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
-const shRouter = new web3.eth.Contract(shIRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
-const dfRouter = new web3.eth.Contract(dfIRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
-// const mooniFactory = new web3.eth.Contract(msIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);
-// const osRouter = new web3.eth.Contract(osIRouter.abi as AbiItem[], DEX[network].OneSlpit.Router);
-// const bsRouter = new web3.eth.Contract(bsIRouter.abi as AbiItem[], DEX[network].Balancerswap.Vault);
-// const kbQuoter = new web3.eth.Contract(kbIQuoter.abi as AbiItem[], DEX[network].Kyberswap.Quoter);
-
-const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 
 /**
  * Calculate dexes quote.
@@ -69,7 +26,7 @@ const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].Un
     const calls = [];
     // const msRouter = await getMooniSwap(tokenIn, tokenOut, mooniFactory, web3);
     // console.log(msRouter.options.address);
-    const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
+    const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
@@ -156,10 +113,7 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             // 'KyberSwap': `${kbAmountPrint} ${tokenPath[next].symbol}`
         });
     }
-    let price = tokenPath[0].symbol != TOKEN.DAI.symbol ? await getPriceOnOracle(
-        tokenPath[0],
-        TOKEN.USDT
-    ) : new BN(1);
+    const price = await getPriceOnOracle(tokenPath[0], TOKEN.USDT);
     const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price); 
     if (profit.isFinite()) {
