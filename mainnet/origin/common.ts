@@ -7,6 +7,7 @@ import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
 import { getPriceOnOracle, toPrintable } from '../../lib/utils';
 import TOKEN from '../../config/super_short.json';
+import { getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 
 export const DEX = [
     'UniSwapV3',
@@ -14,7 +15,8 @@ export const DEX = [
     'SushiSwap',
     'ShibaSwap',
     'DefiSwap',
-    'LinkSwap'
+    'LinkSwap',
+    'MooniSwap'
 ]
 /**
  * Calculate dexes quote.
@@ -25,12 +27,14 @@ export const DEX = [
  */
 export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
+    const pool = await getMooniSwap(tokenIn, tokenOut);
     const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
     const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
     const lk = getPriceOnUniV2(amountIn, tokenIn, tokenOut, lkRouter);
+    // const mn = getPriceOnMooni(amountIn, tokenIn, tokenOut, pool);
  
     calls.push(
         [un3Quoter.options.address, un3],
@@ -38,7 +42,8 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: stri
         [suRouter.options.address, su],
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
-        [lkRouter.options.address, lk]
+        [lkRouter.options.address, lk],
+        // [pool.options.address, mn]
     );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
@@ -48,6 +53,7 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: stri
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
     const lkQuote = result[5].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
+    // const mnQuote = result[6].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
     return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, lkQuote]
 }
 /**

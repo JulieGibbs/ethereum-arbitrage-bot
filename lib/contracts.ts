@@ -42,7 +42,10 @@ export const lkRouter = new web3.eth.Contract(lkIRouter.abi as AbiItem[], DEX[ne
 // Mooniswap contract
 export const mooniFactory = new web3.eth.Contract(msIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);
 export const getMooniSwap = async (tokenIn: string, tokenOut: string) => {
+    console.log(mooniFactory.options.address);
     const mooniPool = await mooniFactory.methods.pools(tokenIn, tokenOut).call();
+    console.log(mooniPool);
+
     return new web3.eth.Contract(msIRouter.abi as AbiItem[], mooniPool);
 }
 // ERC20 contract
