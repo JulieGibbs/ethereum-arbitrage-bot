@@ -4,7 +4,8 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { dfRouter, flashSwap, lkRouter, shRouter, suRouter, un2Router, un3Router } from '../../lib/contracts';
+import { Contract } from 'web3-eth-contract';
+import { flashSwap } from '../../lib/contracts';
 import { getPriceOnOracle, toPrintable } from '../../lib/utils';
 import { getSwapOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
@@ -14,6 +15,7 @@ import { Token } from '../../lib/types';
 import TOKEN from '../../config/mainnet.json';
 import { callFlashSwap, printAccountBalance } from '../common';
 import { DEX, getAllQuotes } from './common';
+import { getSwapOnMooni } from '../../lib/mooniswap/getCalldata';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
@@ -53,49 +55,54 @@ const runBot = async (inputAmount: BN) => {
 
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
-
-        amountOut[i] = await getAllQuotes(maxAmountOut[i], tokens[i].address, tokens[next].address);
+        let contracts: Contract[];
+        [amountOut[i], contracts] = await getAllQuotes(maxAmountOut[i], tokens[i].address, tokens[next].address);
         maxAmountOut[i + 1] = BN.max(...amountOut[i]);
         let amountIn: string = toPrintable(maxAmountOut[i], tokens[i].decimals, fixed);
         let maxAmountPrint: string = toPrintable(maxAmountOut[i + 1], tokens[next].decimals, fixed);
 
         if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
             dexName = DEX[0];
-            spenders.push(un3Router.options.address);
-            routers.push(un3Router.options.address);
+            spenders.push(contracts[0].options.address);
+            routers.push(contracts[0].options.address);
             tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             dexName = DEX[1];
-            spenders.push(un2Router.options.address);
-            routers.push(un2Router.options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, un2Router));
+            spenders.push(contracts[1].options.address);
+            routers.push(contracts[1].options.address);
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[1]));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             dexName = DEX[2];
-            spenders.push(suRouter.options.address);
-            routers.push(suRouter.options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, suRouter));
+            spenders.push(contracts[2].options.address);
+            routers.push(contracts[2].options.address);
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[2]));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
             dexName = DEX[3];
-            spenders.push(shRouter.options.address);
-            routers.push(shRouter.options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, shRouter));
+            spenders.push(contracts[3].options.address);
+            routers.push(contracts[3].options.address);
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[3]));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             dexName = DEX[4];
-            spenders.push(dfRouter.options.address);
-            routers.push(dfRouter.options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, dfRouter));
+            spenders.push(contracts[4].options.address);
+            routers.push(contracts[4].options.address);
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[4]));
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
             dexName = DEX[5];
-            spenders.push(lkRouter.options.address);
-            routers.push(lkRouter.options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, lkRouter));
+            spenders.push(contracts[5].options.address);
+            routers.push(contracts[5].options.address);
+            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[5]));
         }
-        
+        else if (maxAmountOut[i + 1].eq(amountOut[i][6])) {
+            dexName = DEX[6];
+            spenders.push(contracts[6].options.address);
+            routers.push(contracts[6].options.address);
+            tradeDatas.push(getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[6]));
+        }
         table.addRow({
             'Input Token': `${amountIn} ${tokens[i].symbol}`,
             [dexName]: `${maxAmountPrint} ${tokens[next].symbol}`

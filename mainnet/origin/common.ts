@@ -1,7 +1,18 @@
 import BN from 'bignumber.js';
 import { fixed, loanFee, web3 } from '../../lib/config';
 import { Table } from 'console-table-printer';
-import { dfRouter, getMooniSwap, lkRouter, multicall, shRouter, suRouter, un2Router, un3Quoter } from '../../lib/contracts';
+import { Contract } from 'web3-eth-contract';
+import { 
+    dfRouter, 
+    getMooniSwap, 
+    lkRouter, 
+    multicall, 
+    shRouter, 
+    suRouter, 
+    un2Router, 
+    un3Quoter, 
+    un3Router 
+} from '../../lib/contracts';
 import { Multicall, Token } from '../../lib/types';
 import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
@@ -25,16 +36,16 @@ export const DEX = [
  * @param tokenOut Output token address.
  * @returns Array of quotes.
  */
-export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
+export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string): Promise<[BN[], Contract[]]> => {
     const calls = [];
-    const pool = await getMooniSwap(tokenIn, tokenOut);
+    const mnRouter = await getMooniSwap(tokenIn, tokenOut);
     const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
     const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
     const lk = getPriceOnUniV2(amountIn, tokenIn, tokenOut, lkRouter);
-    // const mn = getPriceOnMooni(amountIn, tokenIn, tokenOut, pool);
+    const mn = getPriceOnMooni(amountIn, tokenIn, tokenOut, mnRouter);
  
     calls.push(
         [un3Quoter.options.address, un3],
@@ -43,18 +54,20 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: stri
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
         [lkRouter.options.address, lk],
-        // [pool.options.address, mn]
+        [mnRouter.options.address, mn]
     );
-
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
-    const uni3Quote = result[0].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
-    const uni2Quote = result[1].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
-    const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
-    const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
-    const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-    const lkQuote = result[5].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
-    // const mnQuote = result[6].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
-    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, lkQuote]
+    const uni3Quote = result[0].success && result[0].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
+    const uni2Quote = result[1].success && result[1].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
+    const suQuote = result[2].success && result[2].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
+    const shQuote = result[3].success && result[3].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
+    const dfQuote = result[4].success && result[4].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
+    const lkQuote = result[5].success && result[5].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
+    const mnQuote = result[6].success && result[6].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
+    const quotes: BN[] = [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, lkQuote, mnQuote];
+    const routers: Contract[] = [un3Router, un2Router, suRouter, shRouter, dfRouter, lkRouter, mnRouter];
+    
+    return [ quotes, routers ];
 }
 /**
  * Calculate and display the best profit path.
@@ -73,8 +86,9 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
         let dexName: string;
+        let contracts: Contract[];
         if (!maxAmountOut[i].isFinite()) return{};
-        amountOut[i] = await getAllQuotes(maxAmountOut[i], tokenPath[i].address, tokenPath[next].address);
+        [ amountOut[i], contracts ] = await getAllQuotes(maxAmountOut[i], tokenPath[i].address, tokenPath[next].address);
         maxAmountOut[i + 1] = BN.max(...amountOut[i]);
         let amountInPrint: string = toPrintable(maxAmountOut[i], tokenPath[i].decimals, fixed);
         let maxAmountPrint: string = toPrintable(maxAmountOut[i + 1], tokenPath[next].decimals, fixed);
