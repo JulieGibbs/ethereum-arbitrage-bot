@@ -5,23 +5,6 @@ import { Network, Token } from './types';
 import { flashSwap, offchainOracle } from './contracts';
 import { RPC_URL } from './rpcURLs'; 
 
-/**
- * Get UniswapV2, Sushiswap, Shibaswap quote.
- * @param amountIn Input amount of token.
- * @param tokenIn Input token address.
- * @param tokenOut Output token address.
- * @param router Router contract.
- * @returns Output amount of token.
- */
-export const getUniswapQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, router: Contract) => {
-    try {
-        let amountOuts = await router.methods.getAmountsOut(amountIn.toFixed(), [tokenIn, tokenOut]).call();
-        return new BN(amountOuts[1]);
-    }
-    catch (err) {
-        return new BN(-Infinity);
-    }
-}
 export const getPriceOnOracle = async (srcToken: Token, dstToken: Token) => {
     try {
         if (srcToken.symbol === dstToken.symbol) return new BN(1);
@@ -36,44 +19,12 @@ export const getPriceOnOracle = async (srcToken: Token, dstToken: Token) => {
         return new BN(-Infinity);
     }
 }
-export const getMooniswapQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract) => {
-    try {
-        let amountOut = await quoter.methods.getReturn(tokenIn, tokenOut, amountIn).call();
-        return new BN(amountOut);
-    }
-    catch (err) {
-        return new BN(-Infinity);
-    }
-}
+
 export const getDodoVMQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract, account: string) => {
     try {
         let [amountOut,] = await quoter.methods.querySellBase(account, amountIn).call();
         console.log(amountOut);
 
-        return new BN(amountOut);
-    }
-    catch (err) {
-        return new BN(-Infinity);
-    }
-}
-
-/**
- * Get UniswapV3 quote.
- * @param amountIn Input amount of token.
- * @param tokenIn Input token address.
- * @param tokenOut Output token address.
- * @param quoter Quoter contract.
- * @returns Output amount of token.
- */
-export const getUniswapV3Quote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract) => {
-    try {
-        let amountOut = await quoter.methods.quoteExactInputSingle(
-            tokenIn,
-            tokenOut,
-            3000,
-            amountIn.toFixed(),
-            '0'
-        ).call();
         return new BN(amountOut);
     }
     catch (err) {

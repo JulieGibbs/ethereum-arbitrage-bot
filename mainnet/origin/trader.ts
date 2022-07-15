@@ -104,9 +104,11 @@ const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: strin
         routers,
         tradeDatas
     );
+    const nonce = await web3.eth.getTransactionCount(account.address);
     const tx = {
         from: account.address,
         to: flashSwap.options.address,
+        nonce: nonce,
         gas: 2000000,
         data: init.encodeABI()
     };

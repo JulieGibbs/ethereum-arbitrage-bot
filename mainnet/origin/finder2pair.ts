@@ -3,15 +3,14 @@ import { web3, network, loanFee, fixed } from '../../lib/config';
 import 'colors';
 import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
-import { dfRouter, multicall, shRouter, suRouter, un2Router, un3Quoter } from '../../lib/contracts';
+import { dfRouter, getMooniSwap, lkRouter, multicall, shRouter, suRouter, un2Router, un3Quoter } from '../../lib/contracts';
 import { getPriceOnOracle, toPrintable } from '../../lib/utils';
 import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
-import { getPriceOnOneSplit } from '../../lib/oneinch/onesplit/getCalldata';
-import { getMooniSwap, getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
+import { getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 
 import { Token, FileContent, Multicall } from '../../lib/types';
-import TOKEN from '../../config/mainnet.json';
+import TOKEN from '../../config/super_short.json';
 
 /**
  * Calculate dexes quote.
@@ -22,14 +21,14 @@ import TOKEN from '../../config/mainnet.json';
  */
  const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string) => {
     const calls = [];
-    // const msRouter = await getMooniSwap(tokenIn, tokenOut, mooniFactory, web3);
+    const msRouter = await getMooniSwap(tokenIn, tokenOut);
     // console.log(msRouter.options.address);
     const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut);
     const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
     const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
-    // const os = getPriceOnOneSplit(amountIn, tokenIn, tokenOut, osRouter);
+    const lk = getPriceOnUniV2(amountIn, tokenIn, tokenOut, lkRouter)
     // const ms = getPriceOnMooni(amountIn, tokenIn, tokenOut, msRouter);
     // const bs = bsRouter.methods.queryBatchSwap();
     // const kb = kbQuoter.methods.quoteExactInputSingle({ tokenIn, tokenOut, feeUnits: 3000, amountIn: amountInString, limitSqrtP: '0' }).encodeABI();
@@ -40,8 +39,7 @@ import TOKEN from '../../config/mainnet.json';
         [suRouter.options.address, su],
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
-        // [osRouter.options.address, os],
-        // [msRouter.options.address, ms]
+        [lkRouter.options.address, lk]
     );
 
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
@@ -50,11 +48,9 @@ import TOKEN from '../../config/mainnet.json';
     const suQuote = result[2].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
     const shQuote = result[3].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[4].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-    // const osQuote = result[5].success ? new BN(web3.eth.abi.decodeParameter('uint256,uint256[]', result[5].returnData).returnAmount as any) : new BN(-Infinity);
-    const osQuote = new BN(-Infinity);
-    // const msQuote = result[6].success ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
+    const lkQuote = result[5].success ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
     const msQuote =new BN(-Infinity);
-    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, osQuote, msQuote];
+    return [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, lkQuote, msQuote];
 }
 
 /**
@@ -107,8 +103,8 @@ const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             'SushiSwap': `${amountPrint[2]} ${tokenPath[next].symbol}`,
             'ShibaSwap': `${amountPrint[3]} ${tokenPath[next].symbol}`,
             'DefiSwap': `${amountPrint[4]} ${tokenPath[next].symbol}`,
-            // 'OneSplit': `${amountPrint[5]} ${tokenPath[next].symbol}`,
-            // 'MooniSwap': `${amountPrint[6]} ${tokenPath[next].symbol}`
+            'LinkSwap': `${amountPrint[5]} ${tokenPath[next].symbol}`,
+            'MooniSwap': `${amountPrint[6]} ${tokenPath[next].symbol}`
         });
     }
     const price = await getPriceOnOracle(tokenPath[0], TOKEN.USDT);
@@ -143,8 +139,8 @@ const main = async () => {
 
     for (let i in TOKEN) {
         if (i === 'WETH') continue;
-        let input = new BN(1).times(new BN(10).pow(TOKEN[i].decimals));
-        let path = [TOKEN[i], TOKEN['WETH']];
+        let input = new BN(1).times(new BN(10).pow(TOKEN['WETH'].decimals));
+        let path = [TOKEN['WETH'], TOKEN[i]];
         let { profitUSD } = await calculateProfit(input, path);
         if (profitUSD && profitUSD.gt(0)) {
             fileContent.push({

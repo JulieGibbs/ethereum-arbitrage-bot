@@ -43,6 +43,10 @@
             "Router": "0xCeB90E4C17d626BE0fACd78b79c9c87d7ca181b3",
             "Factory": "0x9DEB29c9a4c7A88a3C0257393b7f3335338D9A9D"
         },
+        "LinkSwap": {
+            "id": 17,
+            "Router": "0xA7eCe0911FE8C60bff9e99f8fAFcDBE56e07afF1"
+        },
         "MooniSwap": {
             "id": 12,
             "Factory": "0x71CD6666064C3A1354a3B4dca5fA1E2D3ee7D303"
