@@ -19,13 +19,13 @@ import bsIRouter from '../abi/BalancerVault.json';
 import IMulticall from '../abi/UniswapV3Multicall2.json';
 import DEX from '../config/dexs.json';
 dotenv.config({ path: __dirname + '/../.env' });
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 // flash swap contract
 export const flashSwap = new web3.eth.Contract(FlashSwap.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
 // oracle contract
-export const offchainOracle = new web3.eth.Contract(IOracle.abi as AbiItem[], DEX[network].OneInchOracle.oracle);
+export const offchainOracle = new web3.eth.Contract(IOracle.abi as AbiItem[], DEX[network].OneInchOracle.Oracle);
 // UniswapV3 contracts
-export const flashFactory = new web3.eth.Contract(UniV3Factory.abi as AbiItem[], DEX[network].UniswapV3.factory);
+export const flashFactory = new web3.eth.Contract(UniV3Factory.abi as AbiItem[], DEX[network].UniswapV3.Factory);
 export const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 export const un3Router = new web3.eth.Contract(un3IRouter.abi as AbiItem[], DEX[network].UniswapV3.Router);
 export const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
