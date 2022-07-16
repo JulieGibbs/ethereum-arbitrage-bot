@@ -6,16 +6,15 @@ import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { flashSwap } from '../../lib/contracts';
-import { getPriceOnOracle, toPrintable } from '../../lib/utils';
-import { getSwapOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
-import { getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
-
-// Types
 import { Token } from '../../lib/types';
 import TOKEN from '../../config/mainnet.json';
+import { getPriceOnOracle, toPrintable } from '../../lib/utils';
 import { callFlashSwap, printAccountBalance } from '../common';
 import { DEX, getAllQuotes } from './common';
+import { getSwapOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
+import { getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
 import { getSwapOnMooni } from '../../lib/mooniswap/getCalldata';
+import { getSwapOnBancorV3 } from '../../lib/bancor/getCalldata';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
@@ -102,6 +101,12 @@ const runBot = async (inputAmount: BN) => {
             spenders.push(contracts[6].options.address);
             routers.push(contracts[6].options.address);
             tradeDatas.push(getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[6]));
+        }
+        else if (maxAmountOut[i + 1].eq(amountOut[i][7])) {
+            dexName = DEX[7];
+            spenders.push(contracts[7].options.address);
+            routers.push(contracts[7].options.address);
+            tradeDatas.push(getSwapOnBancorV3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address));
         }
         table.addRow({
             'Input Token': `${amountIn} ${tokens[i].symbol}`,

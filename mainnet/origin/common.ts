@@ -3,6 +3,8 @@ import { fixed, loanFee, web3 } from '../../lib/config';
 import { Table } from 'console-table-printer';
 import { Contract } from 'web3-eth-contract';
 import { 
+    bcQuoter,
+    bcRouter,
     dfRouter, 
     getMooniSwapContract, 
     lkRouter, 
@@ -18,6 +20,7 @@ import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
 import { getPriceOnOracle, stripAnsiCodes, toPrintable } from '../../lib/utils';
 import { getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
+import { getPriceOnBancorV3 } from '../../lib/bancor/getCalldata';
 
 export const DEX = [
     'UniSwapV3',
@@ -26,7 +29,8 @@ export const DEX = [
     'ShibaSwap',
     'DefiSwap',
     'LinkSwap',
-    'MooniSwap'
+    'MooniSwap',
+    'BancorV3'
 ]
 /**
  * Calculate dexes quote.
@@ -45,7 +49,7 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     const df = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, dfRouter);
     const lk = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, lkRouter);
     const mn = getPriceOnMooni(amountIn, tokenIn.address, tokenOut.address, mnRouter);
- 
+    const bc = getPriceOnBancorV3(amountIn, tokenIn.address, tokenOut.address);
     calls.push(
         [un3Quoter.options.address, un3],
         [un2Router.options.address, un2],
@@ -53,7 +57,8 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
         [lkRouter.options.address, lk],
-        [mnRouter.options.address, mn]
+        [mnRouter.options.address, mn],
+        [bcQuoter.options.address, bc]
     );
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
     const uni3Quote = result[0].success && result[0].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
@@ -63,8 +68,9 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     const dfQuote = result[4].success && result[4].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
     const lkQuote = result[5].success && result[5].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
     const mnQuote = result[6].success && result[6].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[6].returnData) as any) : new BN(-Infinity);
-    const quotes: BN[] = [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, lkQuote, mnQuote];
-    const routers: Contract[] = [un3Router, un2Router, suRouter, shRouter, dfRouter, lkRouter, mnRouter];
+    const bcQuote = result[7].success && result[7].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[7].returnData) as any) : new BN(-Infinity);
+    const quotes: BN[] = [uni3Quote, uni2Quote, suQuote, shQuote, dfQuote, lkQuote, mnQuote, bcQuote];
+    const routers: Contract[] = [un3Router, un2Router, suRouter, shRouter, dfRouter, lkRouter, mnRouter, bcRouter];
     
     return [ quotes, routers ];
 }
