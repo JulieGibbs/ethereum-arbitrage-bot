@@ -4,7 +4,7 @@ import { Table } from 'console-table-printer';
 import { Contract } from 'web3-eth-contract';
 import { 
     dfRouter, 
-    getMooniSwap, 
+    getMooniSwapContract, 
     lkRouter, 
     multicall, 
     shRouter, 
@@ -16,8 +16,7 @@ import {
 import { Multicall, Token } from '../../lib/types';
 import { getPriceOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
-import { getPriceOnOracle, toPrintable } from '../../lib/utils';
-import TOKEN from '../../config/super_short.json';
+import { getPriceOnOracle, stripAnsiCodes, toPrintable } from '../../lib/utils';
 import { getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 
 export const DEX = [
@@ -36,16 +35,16 @@ export const DEX = [
  * @param tokenOut Output token address.
  * @returns Array of quotes.
  */
-export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: string): Promise<[BN[], Contract[]]> => {
+export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token): Promise<[BN[], Contract[]]> => {
     const calls = [];
-    const mnRouter = await getMooniSwap(tokenIn, tokenOut);
-    const un3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut);
-    const un2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
-    const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
-    const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
-    const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
-    const lk = getPriceOnUniV2(amountIn, tokenIn, tokenOut, lkRouter);
-    const mn = getPriceOnMooni(amountIn, tokenIn, tokenOut, mnRouter);
+    const mnRouter = await getMooniSwapContract(tokenIn, tokenOut);
+    const un3 = getPriceOnUniV3(amountIn, tokenIn.address, tokenOut.address);
+    const un2 = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, un2Router);
+    const su = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, suRouter);
+    const sh = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, shRouter);
+    const df = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, dfRouter);
+    const lk = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, lkRouter);
+    const mn = getPriceOnMooni(amountIn, tokenIn.address, tokenOut.address, mnRouter);
  
     calls.push(
         [un3Quoter.options.address, un3],
@@ -76,7 +75,11 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: string, tokenOut: stri
  * @returns Return the best profit.
  */
 export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
-    console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);
+    const blockNumber = await web3.eth.getBlockNumber() + '';
+    let tokenPathPrint = tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol;
+    let log = `Block: ${blockNumber}\t\t${tokenPathPrint}`;
+    console.log(log);
+    log += '\n';
     const table = new Table();
     const maxAmountOut: BN[] = [amountIn,];
     const amountOut: BN[][] = [];
@@ -84,44 +87,36 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     const feeAmount = amountIn.times(a).idiv(b);
     
     for (let i = 0; i < tokenPath.length; i++) {
+        if (!maxAmountOut[i].isFinite()) return {};
+
         let next = (i + 1) % tokenPath.length;
-        let dexName: string;
-        let contracts: Contract[];
-        if (!maxAmountOut[i].isFinite()) return{};
-        [ amountOut[i], contracts ] = await getAllQuotes(maxAmountOut[i], tokenPath[i].address, tokenPath[next].address);
+        [amountOut[i],] = await getAllQuotes(maxAmountOut[i], tokenPath[i], tokenPath[next]);
         maxAmountOut[i + 1] = BN.max(...amountOut[i]);
+
         let amountInPrint: string = toPrintable(maxAmountOut[i], tokenPath[i].decimals, fixed);
         let maxAmountPrint: string = toPrintable(maxAmountOut[i + 1], tokenPath[next].decimals, fixed);
+
         for (let j = 0; j < amountOut[i].length; j++) {
-            if (maxAmountOut[i + 1].eq(amountOut[i][j])) {
-                dexName = DEX[j];
-            }
+            maxAmountOut[i + 1].eq(amountOut[i][j]) && table.addRow({
+                'Input Token': `${amountInPrint.yellow} ${tokenPath[i].symbol}`,
+                [DEX[j]]: `${maxAmountPrint.yellow} ${tokenPath[next].symbol}`,
+            });
         }
-        table.addRow({
-            'Input Token': `${amountInPrint} ${tokenPath[i].symbol}`,
-            [dexName]: `${maxAmountPrint} ${tokenPath[next].symbol}`,
-        });
+        
     }
-    const price = await getPriceOnOracle(tokenPath[0], TOKEN.USDT);
+    const price = await getPriceOnOracle(tokenPath[0]);
     const profit = maxAmountOut[tokenPath.length].minus(maxAmountOut[0]).minus(feeAmount);
-    const profitUSD = profit.times(price); 
+    const profitUSD = profit.times(price);
+    const profitPrint = toPrintable(profit, tokenPath[0].decimals, fixed);
+    const profitUSDPrint = toPrintable(profitUSD, tokenPath[0].decimals + 8, fixed);
+    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($ ${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red} )\n`;
     if (profit.isFinite()) {
         table.printTable();
-        console.log(
-            'Input:',
-            toPrintable(amountIn, tokenPath[0].decimals, fixed),
-            tokenPath[0].symbol,
-            '\tEstimate profit:',
-            profit.gt(0) ?
-                profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
-                profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
-            tokenPath[0].symbol,
-            '($',
-            profitUSD.gt(0) ?
-                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
-                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
-            ')'
-        );
+        console.log(profitLog);
     }
-    return { profitUSD };
+    
+    log += profitLog;
+    log += table.render() + '\n\n';
+    log = stripAnsiCodes(log);
+    return { table, profit, log };
 }

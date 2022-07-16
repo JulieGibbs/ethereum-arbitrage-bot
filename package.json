@@ -4,11 +4,9 @@
   "description": "Flashloan Bot Arbitrage Finder",
   "main": "bot.js",
   "scripts": {
-    "main-finder2": "ts-node mainnet/origin/finder2pair",
-    "main-finder3": "ts-node mainnet/origin/finder3pair",
+    "main-finder": "ts-node mainnet/origin/finder",
     "main-trader": "ts-node mainnet/origin/trader",
-    "zero-finder2": "ts-node mainnet/zero/finder2pair",
-    "zero-finder3": "ts-node mainnet/zero/finder3pair",
+    "zero-finder": "ts-node mainnet/zero/finder",
     "zero-trader": "ts-node mainnet/zero/trader",
     "dodo-finder2": "ts-node mainnet/dodo/finder2pair",
     "dodo-finder3": "ts-node mainnet/dodo/finder3pair",

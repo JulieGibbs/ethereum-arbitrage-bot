@@ -1,9 +1,7 @@
-import * as dotenv from 'dotenv';
+import 'dotenv/config';
 import Web3 from 'web3';
 import { Network } from './types';
 import { RPC_URL } from './rpcURLs';
-
-dotenv.config({ path: __dirname + '/../.env' });
 
 export const deadline = 300;
 export const loanFee = 0.0005;

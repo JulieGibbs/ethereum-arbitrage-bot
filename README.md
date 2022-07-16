@@ -26,25 +26,24 @@ Flashloan Bot Arbitrage Finder
         ```
         yarn main-trader dai weth
         ```
-    * finder2pair bot
+    * finder bot
         ```
-        yarn main-finder2
-        ```
-    * finder3pair bot
-        ```
-        yarn main-finder3
+        yarn main-finder * weth
+        yarn main-finder weth usdt *
+        yarn main-finder weth * *
+        yarn main-finder * weth *
         ```
 - Trade for 0x Exchage API
     * trader bot bot
         ```
         yarn zero-trader
         ```
-    * finder2pair bot
+    * finder bot
         ```
-        yarn zero-finder2
-    * finder3pair bot
-        ```
-        yarn zero-finder3
+        yarn zero-finder * weth
+        yarn zero-finder weth usdt *
+        yarn zero-finder weth * *
+        yarn zero-finder * weth *
         ```
 - Trade for Dodo Exchage API
     * trader bot bot

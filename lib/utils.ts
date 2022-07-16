@@ -2,22 +2,14 @@ import axios from 'axios';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { Network, Token } from './types';
-import { flashSwap, offchainOracle } from './contracts';
+import { flashSwap, getChainlinkContract } from './contracts';
 import { RPC_URL } from './rpcURLs'; 
 
-export const getPriceOnOracle = async (srcToken: Token, dstToken: Token) => {
-    try {
-        if (srcToken.symbol === dstToken.symbol) return new BN(1);
-        let price = await offchainOracle.methods.getRate(srcToken.address, dstToken.address, false).call();
-        if (srcToken.symbol == 'USDC') return new BN(price).div(new BN(10).pow(18));
-        if (srcToken.symbol == 'WBTC') return new BN(price).div(new BN(10).pow(16));
-        return new BN(price).div(new BN(10).pow(dstToken.decimals));            
-    }
-    catch (err) {
-        // console.log(err);
-
-        return new BN(-Infinity);
-    }
+export const getPriceOnOracle = async (token: Token) => {
+    const contract = getChainlinkContract(token);
+    if (!contract) return new BN(-Infinity);
+    const res = await contract.methods.latestAnswer().call();
+    return new BN(res);
 }
 
 export const getDodoVMQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract, account: string) => {
@@ -206,6 +198,8 @@ export const getSwapFrom1InchApi = async (amountIn: BN, tokenIn: Token, tokenOut
  */
 export const toPrintable = (amount: BN, decimal: number, fixed: number) => {
     return amount.isFinite()
-        ? amount.div(new BN(10).pow(decimal)).toFixed(fixed).yellow
-        : 'N/A'.yellow;
+        ? amount.div(new BN(10).pow(decimal)).toFixed(fixed)
+        : 'N/A';
 }
+
+export const stripAnsiCodes = (str: string) => str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');

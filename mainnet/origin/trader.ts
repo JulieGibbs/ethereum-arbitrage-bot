@@ -56,7 +56,7 @@ const runBot = async (inputAmount: BN) => {
     for (let i = 0; i < tokens.length; i++) {
         let next = (i + 1) % tokens.length;
         let contracts: Contract[];
-        [amountOut[i], contracts] = await getAllQuotes(maxAmountOut[i], tokens[i].address, tokens[next].address);
+        [amountOut[i], contracts] = await getAllQuotes(maxAmountOut[i], tokens[i], tokens[next]);
         maxAmountOut[i + 1] = BN.max(...amountOut[i]);
         let amountIn: string = toPrintable(maxAmountOut[i], tokens[i].decimals, fixed);
         let maxAmountPrint: string = toPrintable(maxAmountOut[i + 1], tokens[next].decimals, fixed);
@@ -108,29 +108,21 @@ const runBot = async (inputAmount: BN) => {
             [dexName]: `${maxAmountPrint} ${tokens[next].symbol}`
         });
     }
-    // console.log(tokenPath);
-    // console.log([inputAmount.toFixed(), '0']);
-    // console.log(routers);
-    // console.log(tradeDatas);
-    table.printTable();
-    const price = await getPriceOnOracle(tokens[0], TOKEN.USDT);
+  
+    const price = await getPriceOnOracle(tokens[0]);
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
-    const profitUSD = profit.times(price); 
-    console.log(
-        'Input:',
-        toPrintable(inputAmount, tokens[0].decimals, fixed),
-        tokens[0].symbol,
-        '\tEstimate profit:',
-        profit.gt(0) ?
-            profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-            profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        tokens[0].symbol,
-        '($',
-            profitUSD.gt(0) ?
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        ')'
-    );
+    const profitUSD = profit.times(price);
+    const profitPrint = toPrintable(profit, tokens[0].decimals, fixed);
+    const profitUSDPrint = toPrintable(profitUSD, tokens[0].decimals + 8, fixed);
+    if (profit.isFinite()) {
+        table.printTable();
+        console.log(
+            'Input:', toPrintable(inputAmount, tokens[0].decimals, fixed), tokens[0].symbol,
+            '\tEstimate profit:', profit.gt(0) ? profitPrint.green : profitPrint.red, tokens[0].symbol,
+            '($', profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red, ')'
+        )
+    }
+
     if (profit.gt(0)) {
         let response = await inquirer.prompt([{
             type: 'input',

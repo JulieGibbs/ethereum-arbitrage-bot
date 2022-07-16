@@ -13,7 +13,7 @@ export const printAccountBalance = async (tokens: Token[]) => {
     const tokenContracts: Contract[] = [];
     const row = { 'Token': 'Balance' };
     tokens.forEach((_token) => {
-        tokenContracts.push(getERC20Contract(_token.address));
+        tokenContracts.push(getERC20Contract(_token));
     });
     let ethBalance = await web3.eth.getBalance(account.address);
     row['ETH'] = toPrintable(new BN(ethBalance), 18, fixed);

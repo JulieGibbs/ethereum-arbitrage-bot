@@ -1,11 +1,15 @@
 import BN from 'bignumber.js';
 import { Table } from 'console-table-printer';
-import { fixed, loanFee, network } from '../../lib/config';
+import { fixed, loanFee, network, web3 } from '../../lib/config';
 import { Token } from '../../lib/types';
-import TOKEN from '../../config/mainnet.json';
-import { getPriceOnOracle, getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getPriceOnOracle, getSwapFromZeroXApi, stripAnsiCodes, toPrintable } from '../../lib/utils';
 export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
-    console.log(tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol);
+    const blockNumber = await web3.eth.getBlockNumber() + '';
+    let tokenPathPrint = tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol;
+    let log = `Block: ${blockNumber}\t\t${tokenPathPrint}`;
+    console.log(log);
+    log += '\n';
+    
     const table = new Table();
     const dexPath: number[] = [];
     let amountOut: BN[] = [], gas = 0;
@@ -32,33 +36,22 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         let dexName = res.orders[0].source;
 
         table.addRow({
-            'Input Token': `${amountInPrint} ${tokenPath[i].symbol}`,
-            [dexName]: `${toAmountPrint} ${tokenPath[next].symbol}`
+            'Input Token': `${amountInPrint.yellow} ${tokenPath[i].symbol}`,
+            [dexName]: `${toAmountPrint.yellow} ${tokenPath[next].symbol}`
         });
     }
-    const price = await getPriceOnOracle(tokenPath[0], TOKEN.USDT);
-    const profit = amountOut[tokenPath.length].minus(amountIn).minus(feeAmount);
-    const profitUSD = profit.times(price); 
+    const price = await getPriceOnOracle(tokenPath[0]);
+    const profit = amountOut[tokenPath.length].minus(amountOut[0]).minus(feeAmount);
+    const profitUSD = profit.times(price);
+    const profitPrint = toPrintable(profit, tokenPath[0].decimals, fixed);
+    const profitUSDPrint = toPrintable(profitUSD, tokenPath[0].decimals + 8, fixed);
+    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($ ${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red} )\tEstimate gas: ${gas}\n`;
     if (profit.isFinite()) {
         table.printTable();
-        console.log(
-            'Input:',
-            toPrintable(amountIn, tokenPath[0].decimals, fixed),
-            tokenPath[0].symbol,
-            '\tEstimate profit:',
-            profit.gt(0) ?
-                profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
-                profit.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
-            tokenPath[0].symbol,
-            '($',
-            profitUSD.gt(0) ?
-                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).green :
-                profitUSD.div(new BN(10).pow(tokenPath[0].decimals)).toFixed(fixed).red,
-            ')',
-            '\tEstimate gas:',
-            gas,
-            '\n'
-        );
+        console.log(profitLog);
     }
-    return { profitUSD, table, dexPath };
+    log += profitLog;
+    log += table.render() + '\n\n';
+    log = stripAnsiCodes(log);
+    return { table, profit, log };
 }

@@ -68,23 +68,15 @@ const runBot = async (inputAmount: BN) => {
  
     table.printTable();
 
-    const price = await getPriceOnOracle(tokens[0], TOKEN.USDT);
-    const profit = amountOut[tokenPath.length].minus(inputAmount).minus(feeAmount);
-    const profitUSD = profit.times(price); 
+    const price = await getPriceOnOracle(tokens[0]);
+    const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
+    const profitUSD = profit.times(price);
+    const profitPrint = toPrintable(profit, tokens[0].decimals, fixed);
+    const profitUSDPrint = toPrintable(profitUSD, tokens[0].decimals + 8, fixed);
     console.log(
-        'Input:',
-        toPrintable(inputAmount, tokens[0].decimals, fixed),
-        tokens[0].symbol,
-        '\tEstimate profit:',
-        profit.gt(0) ?
-            profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-            profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        tokens[0].symbol,
-        '($',
-            profitUSD.gt(0) ?
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        ')'
+        'Input:', toPrintable(inputAmount, tokens[0].decimals, fixed), tokens[0].symbol,
+        '\tEstimate profit:', profit.gt(0) ? profitPrint.green : profitPrint.red, tokens[0].symbol,
+        '($', profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red, ')'
     );
     if (profit.gt(0)) {
         let response = await inquirer.prompt([{
@@ -94,6 +86,7 @@ const runBot = async (inputAmount: BN) => {
         }]);
         response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, spenders, routers, tradeDatas);
     }
+    console.log()
 }
 
 /**
