@@ -13,7 +13,7 @@ const run = async (tokenPath: Token[]) => {
     if (!profit || profit.lte(0)) return;
     
     const date = new Date();
-    const fileName = `./logs/${date.toISOString().substring(0, 10)}.log`;
+    const fileName = `./logs/main-${date.toISOString().substring(0, 10)}.log`;
     fs.appendFile(fileName, log, () => {});
 }
 
