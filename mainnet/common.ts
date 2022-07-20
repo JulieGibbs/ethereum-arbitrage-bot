@@ -1,12 +1,14 @@
 import BN from 'bignumber.js';
 import { Table } from 'console-table-printer';
 import { Contract } from 'web3-eth-contract';
-import { Token } from '../lib/types';
+import { CallData, Token } from '../lib/types';
 import { account, fixed, web3 } from '../lib/config';
 import { flashSwap, getERC20Contract } from '../lib/contracts';
 import { getMaxFlashAmount } from '../lib/uniswap/v3/getCalldata';
 import { toPrintable } from '../lib/utils';
 import TOKEN from '../config/mainnet.json';
+
+export const maxInt= new BN(2).pow(256).minus(1);
 
 export const printAccountBalance = async (tokens: Token[]) => {
     const table = new Table();
@@ -39,20 +41,12 @@ export const printAccountBalance = async (tokens: Token[]) => {
 * @param tradePath Array of address to trade.
 * @param dexPath Array of dex index.
 */
-export const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], spenders: string[], routers: string[], tradeDatas: string[]) => {
+export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeDatas: CallData[]) => {
    console.log('Swapping ...');
-   if (tokenPath.length != routers.length || tokenPath.length != tradeDatas.length) {
-       console.log('Swap data is not correct!')
-       return {};
-   }
-   const loanTokens = loanToken === TOKEN.WETH.address ? [TOKEN.DAI.address, loanToken] : [loanToken, TOKEN.WETH.address];
-   const loanAmounts = loanToken === TOKEN.WETH.address ? ['0', loanAmount.toFixed()] : [loanAmount.toFixed(), '0']
-   const init = flashSwap.methods.initUniFlashSwap(
-       loanTokens,
-       loanAmounts,
-       tokenPath,
-       spenders,
-       routers,
+
+   const data = flashSwap.methods.initFlashSwap(
+       loanToken,
+       loanAmount,
        tradeDatas
    );
    const nonce = await web3.eth.getTransactionCount(account.address);
@@ -60,8 +54,9 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath
        from: account.address,
        to: flashSwap.options.address,
        nonce: nonce,
+       gasPrice: 30000000000,
        gas: 2000000,
-       data: init.encodeABI()
+       data: data.encodeABI()
    };
    const signedTx = await account.signTransaction(tx);
 

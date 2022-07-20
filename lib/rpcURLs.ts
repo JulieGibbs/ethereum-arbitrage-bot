@@ -3,11 +3,15 @@ dotenv.config({ path: __dirname + '/../.env' });
 export const RPC_URL = {
     "localhost": {
         "id": 1,
-        "url": "127.0.0.1:7545"
+        "url": "http://127.0.0.1:8545"
     },
     "mainnet": {
         "id": 1,
         "url": "https://mainnet.infura.io/v3/" + process.env.INFURA_KEY
+    },
+    "kovan": {
+        "id": 42,
+        "url": "https://kovan.infura.io/v3/" + process.env.INFURA_KEY
     },
     "bsc": {
         "id": 56,

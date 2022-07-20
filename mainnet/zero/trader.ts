@@ -3,12 +3,12 @@ import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
 import { network, loanFee, fixed } from '../../lib/config';
-import { getPriceOnOracle, getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { getAllowance, getApproveEncode, getPriceOnOracle, getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
 // Types
-import { Token } from '../../lib/types';
-import { Contract } from 'web3-eth-contract';
+import { CallData, Token } from '../../lib/types';
 import TOKEN from '../../config/mainnet.json';
-import { callFlashSwap, printAccountBalance } from '../common';
+import { callFlashSwap, maxInt, printAccountBalance } from '../common';
+import { flashSwap } from '../../lib/contracts';
 
 const tokens: Token[] = [];
 let maxInputAmount: BN;
@@ -32,10 +32,7 @@ const initTokenContract = async () => {
  */
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
-    const tokenPath: string[] = tokens.map(_token => _token.address);
-    const spenders: string[] = [];
-    const routers: string[] = [];
-    const tradeDatas: string[] = [];
+    const tradeDatas: CallData[] = [];
     const amountOut: BN[] = [];
     amountOut.push(inputAmount);
     const [a, b] = new BN(loanFee).toFraction();
@@ -53,9 +50,9 @@ const runBot = async (inputAmount: BN) => {
         gas = new BN(res.gas).times(new BN(res.gasPrice));
         amountOut[i + 1] = new BN(res.buyAmount);
         let dexName = res.orders[0].source;
-        spenders.push(res.allowanceTarget);
-        routers.push(res.to);
-        tradeDatas.push(res.data);
+        if (amountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, res.allowanceTarget)))
+            tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], res.allowanceTarget, maxInt)]);
+        tradeDatas.push([res.to, res.data]);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
         let amountInPrint = toPrintable(amountOut[i], tokens[i].decimals, fixed);
 
@@ -67,7 +64,7 @@ const runBot = async (inputAmount: BN) => {
     }
  
     table.printTable();
-
+    console.log(tradeDatas);
     const price = await getPriceOnOracle(tokens[0]);
     const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price);
@@ -84,7 +81,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, spenders, routers, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas);
     }
     console.log()
 }

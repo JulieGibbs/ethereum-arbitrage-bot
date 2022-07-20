@@ -2,7 +2,7 @@ import axios from 'axios';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { Network, Token } from './types';
-import { flashSwap, getChainlinkContract } from './contracts';
+import { flashSwap, getChainlinkContract, getERC20Contract } from './contracts';
 import { RPC_URL } from './rpcURLs'; 
 
 export const getPriceOnOracle = async (token: Token) => {
@@ -11,7 +11,14 @@ export const getPriceOnOracle = async (token: Token) => {
     const res = await contract.methods.latestAnswer().call();
     return new BN(res);
 }
-
+export const getAllowance = async (token: Token, owner: string, spender: string) => {
+    const erc20 = getERC20Contract(token);
+    return await erc20.methods.allowance(owner, spender).call();
+}
+export const getApproveEncode = (token: Token, spender: string, amount: BN) => {
+    const erc20 = getERC20Contract(token);
+    return erc20.methods.approve(spender, amount.toFixed()).encodeABI();
+}
 export const getDodoVMQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract, account: string) => {
     try {
         let [amountOut,] = await quoter.methods.querySellBase(account, amountIn).call();
@@ -117,12 +124,12 @@ export const getSwapFromDodoApi = async (amountIn: BN, tokenIn: Token, tokenOut:
     }
 }
 export const getSwapFromZeroXApi = async (amountIn: BN, tokenIn: Token, tokenOut: Token, network: Network) => {
-    let chainId = '';
-    if (network === 'polygon') chainId = 'polygon.';
-    if (network === 'bsc') chainId = 'bsc.';
-    if (network === 'optimism') chainId = 'optimism.';
+    let chain = '';
+    if (network === 'polygon') chain = 'polygon.';
+    if (network === 'bsc') chain = 'bsc.';
+    if (network === 'optimism') chain = 'optimism.';
     try {
-        const res = await axios.get(`https://${chainId}api.0x.org/swap/v1/quote`, {
+        const res = await axios.get(`https://${chain}api.0x.org/swap/v1/quote`, {
             params: {
                 sellToken: tokenIn.address,
                 buyToken: tokenOut.address,

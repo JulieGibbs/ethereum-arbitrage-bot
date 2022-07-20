@@ -22,15 +22,15 @@ import bcIQuoter from '../abi/BancorNetworkInfo.json';
 import bcIRouter from '../abi/BancorNetwork.json';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-export const flashSwap = new web3.eth.Contract(FlashSwap.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
+export const flashSwap = new web3.eth.Contract(FlashSwap.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
 export const offchainOracle = new web3.eth.Contract(IOracle.abi as AbiItem[], DEX[network].OneInchOracle.Oracle);
 export const flashFactory = new web3.eth.Contract(UniV3Factory.abi as AbiItem[], DEX[network].UniswapV3.Factory);
 export const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 export const un3Router = new web3.eth.Contract(un3IRouter.abi as AbiItem[], DEX[network].UniswapV3.Router);
 export const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
 export const un2Router =  new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].UniswapV2.Router);
-export const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].SushiswapV2.Router);
-export const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].ShibaswapV2.Router);
+export const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].Sushiswap.Router);
+export const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].Shibaswap.Router);
 export const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
 export const lkRouter = new web3.eth.Contract(lkIRouter.abi as AbiItem[], DEX[network].LinkSwap.Router);
 export const mnFactory = new web3.eth.Contract(mnIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);

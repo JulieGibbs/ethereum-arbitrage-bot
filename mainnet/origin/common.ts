@@ -23,14 +23,14 @@ import { getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 import { getPriceOnBancorV3 } from '../../lib/bancor/getCalldata';
 
 export const DEX = [
-    'UniSwapV3',
-    'UniSwapV2',
-    'SushiSwap',
-    'ShibaSwap',
-    'DefiSwap',
-    'LinkSwap',
-    'MooniSwap',
-    'BancorV3'
+    'Uniswap_V3',
+    'Uniswap_V2',
+    'Sushiswap',
+    'Shibaswap',
+    'Defiswap',
+    'Linkswap',
+    'Mooniswap',
+    'Bancor_V3'
 ]
 /**
  * Calculate dexes quote.
@@ -42,7 +42,7 @@ export const DEX = [
 export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token): Promise<[BN[], Contract[]]> => {
     const calls = [];
     const mnRouter = await getMooniSwapContract(tokenIn, tokenOut);
-    const un3 = getPriceOnUniV3(amountIn, tokenIn.address, tokenOut.address);
+    const un3 = getPriceOnUniV3(amountIn, tokenIn.address, tokenOut.address, un3Quoter);
     const un2 = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, suRouter);
     const sh = getPriceOnUniV2(amountIn, tokenIn.address, tokenOut.address, shRouter);

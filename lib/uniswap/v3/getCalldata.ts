@@ -1,12 +1,12 @@
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { swapFee, deadline } from '../../config';
-import { flashFactory, un3Quoter, un3Router } from '../../contracts'; 
+import { flashFactory } from '../../contracts'; 
 import TOKEN from '../../../config/mainnet.json';
 
 
-export const getPriceOnUniV3 = (amountIn: BN, tokenIn: string, tokenOut: string) => {
-    const encoded = un3Quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, swapFee, amountIn.toFixed(), '0').encodeABI();
+export const getPriceOnUniV3 = (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract) => {
+    const encoded = quoter.methods.quoteExactInputSingle(tokenIn, tokenOut, swapFee, amountIn.toFixed(), '0').encodeABI();
     return encoded;
 };
 
@@ -24,7 +24,7 @@ export const getMaxFlashAmount = async (tokenIn: Contract) => {
     }
 };
 
-export const getSwapOnUniv3 = (amountIn: BN, amountOutMin: BN, path: string[], recipient: string) => {
+export const getSwapOnUniv3 = (amountIn: BN, amountOutMin: BN, path: string[], recipient: string, router: Contract) => {
     const param = {
         tokenIn: path[0],
         tokenOut: path[1],
@@ -35,6 +35,6 @@ export const getSwapOnUniv3 = (amountIn: BN, amountOutMin: BN, path: string[], r
         amountOutMinimum: amountOutMin.toFixed(),
         sqrtPriceLimitX96: 0
     }
-    const encoded = un3Router.methods.exactInputSingle(param).encodeABI();
+    const encoded = router.methods.exactInputSingle(param).encodeABI();
     return encoded;
 }

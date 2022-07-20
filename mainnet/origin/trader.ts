@@ -6,10 +6,10 @@ import { Table } from 'console-table-printer';
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { flashSwap } from '../../lib/contracts';
-import { Token } from '../../lib/types';
+import { CallData, Token } from '../../lib/types';
 import TOKEN from '../../config/mainnet.json';
-import { getPriceOnOracle, toPrintable } from '../../lib/utils';
-import { callFlashSwap, printAccountBalance } from '../common';
+import { getAllowance, getApproveEncode, getPriceOnOracle, toPrintable } from '../../lib/utils';
+import { callFlashSwap, maxInt, printAccountBalance } from '../common';
 import { DEX, getAllQuotes } from './common';
 import { getSwapOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
@@ -42,10 +42,7 @@ const initTokenContract = async () => {
  */
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
-    const tokenPath: string[] = tokens.map(_token => _token.address);
-    const spenders: string[] = [];
-    const routers: string[] = [];
-    const tradeDatas: string[] = [];
+    const tradeDatas: CallData[] = [];
     const maxAmountOut: BN[] = [inputAmount,];
     const amountOut: BN[][] = [];
     let dexName: string;
@@ -62,58 +59,82 @@ const runBot = async (inputAmount: BN) => {
 
         if (maxAmountOut[i + 1].eq(amountOut[i][0])) {
             dexName = DEX[0];
-            spenders.push(contracts[0].options.address);
-            routers.push(contracts[0].options.address);
-            tradeDatas.push(getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[0].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[0].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[0].options.address, 
+                getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[0])
+            ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
             dexName = DEX[1];
-            spenders.push(contracts[1].options.address);
-            routers.push(contracts[1].options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[1]));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[1].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[1].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[1].options.address,
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[1])
+            ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
             dexName = DEX[2];
-            spenders.push(contracts[2].options.address);
-            routers.push(contracts[2].options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[2]));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[2].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[2].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[2].options.address,
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[2])
+            ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
             dexName = DEX[3];
-            spenders.push(contracts[3].options.address);
-            routers.push(contracts[3].options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[3]));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[3].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[3].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[3].options.address,
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[3])
+            ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
             dexName = DEX[4];
-            spenders.push(contracts[4].options.address);
-            routers.push(contracts[4].options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[4]));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[4].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[4].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[4].options.address,
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[4])
+            ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
             dexName = DEX[5];
-            spenders.push(contracts[5].options.address);
-            routers.push(contracts[5].options.address);
-            tradeDatas.push(getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[5]));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[5].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[5].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[5].options.address,
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[5])
+            ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][6])) {
             dexName = DEX[6];
-            spenders.push(contracts[6].options.address);
-            routers.push(contracts[6].options.address);
-            tradeDatas.push(getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[6]));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[6].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[6].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[6].options.address,
+                getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[6])
+            ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][7])) {
             dexName = DEX[7];
-            spenders.push(contracts[7].options.address);
-            routers.push(contracts[7].options.address);
-            tradeDatas.push(getSwapOnBancorV3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address));
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[7].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[7].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[7].options.address,
+                getSwapOnBancorV3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address)
+            ]);
         }
         table.addRow({
             'Input Token': `${amountIn} ${tokens[i].symbol}`,
             [dexName]: `${maxAmountPrint} ${tokens[next].symbol}`
         });
     }
-  
+    // console.log(tradeDatas);
     const price = await getPriceOnOracle(tokens[0]);
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price);
@@ -134,7 +155,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tokenPath, spenders, routers, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas);
     }
 
 }

@@ -1,10 +1,9 @@
-import 'colors';
 import fs from 'fs';
+import 'colors';
 import BN from 'bignumber.js';
-import { Token } from '../../lib/types';
 import TOKEN from '../../config/super_short.json';
 import { calculateProfit } from './common';
-import { network } from '../../lib/config';
+import { Token } from '../../lib/types';
 
 
 const run = async (tokenPath: Token[]) => {
