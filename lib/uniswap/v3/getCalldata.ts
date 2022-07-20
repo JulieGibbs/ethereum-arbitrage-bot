@@ -1,7 +1,7 @@
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
 import { swapFee, deadline } from '../../config';
-import { flashFactory } from '../../contracts'; 
+import { uni3Factory, uni2Factory } from '../../contracts'; 
 import TOKEN from '../../../config/mainnet.json';
 
 
@@ -15,7 +15,7 @@ export const getMaxFlashAmount = async (tokenIn: Contract) => {
     // console.log(tokenIn.options.address);
     // console.log(flashFactory.options.address);
     try {
-        const flashPool = await flashFactory.methods.getPool(tokenIn.options.address, otherToken, 500).call();
+        const flashPool = await uni3Factory.methods.getPool(tokenIn.options.address, otherToken, 500).call();
         const balance = await tokenIn.methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
         return maxAmount;

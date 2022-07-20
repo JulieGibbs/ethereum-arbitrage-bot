@@ -6,7 +6,6 @@ import { account, fixed, web3 } from '../lib/config';
 import { flashSwap, getERC20Contract } from '../lib/contracts';
 import { getMaxFlashAmount } from '../lib/uniswap/v3/getCalldata';
 import { toPrintable } from '../lib/utils';
-import TOKEN from '../config/mainnet.json';
 
 export const maxInt= new BN(2).pow(256).minus(1);
 
@@ -28,11 +27,12 @@ export const printAccountBalance = async (tokens: Token[]) => {
 
     table.addRow(row);
     table.printTable();
-    const maxInputAmount = await getMaxFlashAmount(tokenContracts[0]);
-    if (maxInputAmount !== undefined)
-        console.log(`Max flash loan amount of ${tokens[0].symbol} is ${toPrintable(maxInputAmount, tokens[0].decimals, fixed)}`)
+    const maxAmount = await getMaxFlashAmount(tokenContracts[0]);
+    const maxFlashBalance = toPrintable(maxAmount, tokens[0].decimals, fixed);
+    if (maxAmount !== undefined)
+        console.log(`Max flash loan amount of ${tokens[0].symbol} is ${maxFlashBalance}`)
     console.log('-------------------------------------------------------------------------------------------------------------------');
-    return maxInputAmount;
+    return maxFlashBalance;
 }
 /**
 * Swap tokens on contract.
@@ -54,7 +54,7 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeData
        from: account.address,
        to: flashSwap.options.address,
        nonce: nonce,
-       gasPrice: 30000000000,
+       gasPrice: 53085135145,
        gas: 2000000,
        data: data.encodeABI()
    };

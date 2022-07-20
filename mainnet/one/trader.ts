@@ -11,7 +11,7 @@ import { callFlashSwap, maxInt, printAccountBalance } from '../common';
 import { flashSwap } from '../../lib/contracts';
 
 const tokens: Token[] = [];
-let maxInputAmount: BN;
+let maxBalance: string;
 
 /**
  * Initialize token contracts.
@@ -22,7 +22,7 @@ const initTokenContract = async () => {
     console.log(`Bot is running on ${network.yellow}. Initializing...`);
     console.log();
     
-    maxInputAmount = await printAccountBalance(tokens);
+    maxBalance = await printAccountBalance(tokens);
 }
 
 /**
@@ -114,7 +114,7 @@ const initTokenContract = async () => {
         }]);
         let input = parseFloat(response.input);
         if (isNaN(input) || input <= 0) continue;
-        if (maxInputAmount == undefined || new BN(input).gt(maxInputAmount)) {
+        if (maxBalance == undefined || new BN(input).gt(new BN(maxBalance))) {
             console.log("Input exceed Max Loan Amount!".red);
             continue;
         }

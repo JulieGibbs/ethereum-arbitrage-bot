@@ -18,7 +18,7 @@ import { getSwapOnBancorV3 } from '../../lib/bancor/getCalldata';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
-let maxInputAmount: BN;
+let maxBalance: string;
 
 
 const tokens: Token[] = [];
@@ -32,7 +32,7 @@ const initTokenContract = async () => {
     console.log(`Bot is running on ${network.yellow}. Initializing...`);
     console.log();
     // Initialize token contracts and decimals.
-    maxInputAmount = await printAccountBalance(tokens);
+    maxBalance = await printAccountBalance(tokens);
 }
 
 /**
@@ -187,7 +187,7 @@ const main = async () => {
         }]);
         let input = parseFloat(response.input);
         if (isNaN(input) || input <= 0) continue;
-        if (maxInputAmount == undefined || new BN(input).gt(maxInputAmount)) {
+        if (maxBalance == undefined || new BN(input).gt(new BN(maxBalance))) {
             console.log("Input exceed Max Loan Amount!".red);
             continue;
         }
