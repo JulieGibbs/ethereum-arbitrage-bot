@@ -36,7 +36,7 @@ Flashloan Bot Arbitrage Finder
 - Trade for 0x Exchage API
     * trader bot bot
         ```
-        yarn zero-trader
+        yarn zero-trader dai weth
         ```
     * finder bot
         ```
@@ -45,17 +45,17 @@ Flashloan Bot Arbitrage Finder
         yarn zero-finder weth * *
         yarn zero-finder * weth *
         ```
-- Trade for Dodo Exchage API
+- Trade for 1Inch Exchage API
     * trader bot bot
         ```
-        yarn dodo-trader
+        yarn one-trader dai weth
         ```
-    * finder2pair bot
+    * finder bot
         ```
-        yarn dodo-finder2
-    * finder3pair bot
-        ```
-        yarn dodo-finder3
+        yarn one-finder * weth
+        yarn one-finder weth usdt *
+        yarn one-finder weth * *
+        yarn one-finder * weth *
         ```
 
 
