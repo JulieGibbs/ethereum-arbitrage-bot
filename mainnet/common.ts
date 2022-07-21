@@ -44,7 +44,7 @@ export const printAccountBalance = async (tokens: Token[]) => {
 export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeDatas: CallData[]) => {
    console.log('Swapping ...');
 
-   const data = flashSwap.methods.initFlashSwap(
+   const data = flashSwap.methods.initFlashloan(
        loanToken,
        loanAmount,
        tradeDatas
@@ -54,7 +54,6 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeData
        from: account.address,
        to: flashSwap.options.address,
        nonce: nonce,
-       gasPrice: 53085135145,
        gas: 2000000,
        data: data.encodeABI()
    };
