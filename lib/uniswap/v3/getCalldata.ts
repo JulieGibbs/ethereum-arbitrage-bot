@@ -10,12 +10,25 @@ export const getPriceOnUniV3 = (amountIn: BN, tokenIn: string, tokenOut: string,
     return encoded;
 };
 
-export const getMaxFlashAmount = async (tokenIn: Contract) => {
+export const getMaxFlashAmount3 = async (tokenIn: Contract) => {
     let otherToken = tokenIn.options.address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
     // console.log(tokenIn.options.address);
     // console.log(flashFactory.options.address);
     try {
         const flashPool = await uni3Factory.methods.getPool(tokenIn.options.address, otherToken, 500).call();
+        const balance = await tokenIn.methods.balanceOf(flashPool).call();
+        const maxAmount = balance ? new BN(balance) : new BN(0);
+        return maxAmount;
+    } catch (err){
+        console.log('Flash pool is not exist!'.red);
+    }
+};
+export const getMaxFlashAmount2 = async (tokenIn: Contract) => {
+    let otherToken = tokenIn.options.address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
+    // console.log(tokenIn.options.address);
+    // console.log(uni2Factory.options.address);
+    try {
+        const flashPool = await uni2Factory.methods.getPair(tokenIn.options.address, otherToken).call();
         const balance = await tokenIn.methods.balanceOf(flashPool).call();
         const maxAmount = balance ? new BN(balance) : new BN(0);
         return maxAmount;

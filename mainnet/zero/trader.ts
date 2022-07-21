@@ -81,7 +81,7 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas, flashSwap);
     }
     console.log()
 }
