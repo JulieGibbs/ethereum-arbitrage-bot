@@ -83,7 +83,7 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
 export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     const blockNumber = await web3.eth.getBlockNumber() + '';
     let tokenPathPrint = tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol;
-    let log = `Block: ${blockNumber}\t\t${tokenPathPrint}`;
+    let log = `Block: ${blockNumber.red.bold}\t\t${tokenPathPrint.yellow}`;
     console.log(log);
     log += '\n';
     const table = new Table();

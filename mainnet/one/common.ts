@@ -6,7 +6,7 @@ import { getPriceFrom1InchApi, getPriceOnOracle, stripAnsiCodes, toPrintable } f
 export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     const blockNumber = await web3.eth.getBlockNumber() + '';
     let tokenPathPrint = tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol;
-    let log = `Block: ${blockNumber}\t\t${tokenPathPrint}`;
+    let log = `Block: ${blockNumber.red.bold}\t\t${tokenPathPrint.yellow}`;
     console.log(log);
     log += '\n';
     
@@ -21,6 +21,7 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
 
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
+        if (!amountOut[i].isFinite()) return{};
         let res = await getPriceFrom1InchApi(
             amountOut[i],
             tokenPath[i],
@@ -29,12 +30,11 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         );
 
         if (res === null) return {};
-
         gas += res.estimatedGas;
         amountOut[i + 1] = new BN(res.toTokenAmount);
-        let toAmountPrint = toPrintable(amountOut[i + 1], tokenPath[next].decimals, fixed);
         let dexName = res.protocols[0][0][0].name;
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
+        let toAmountPrint = toPrintable(amountOut[i + 1], tokenPath[next].decimals, fixed);
         table.addRow({
             'Input Token': `${amountInPrint} ${tokenPath[i].symbol}`,
             [dexName]: `${toAmountPrint} ${tokenPath[next].symbol}`

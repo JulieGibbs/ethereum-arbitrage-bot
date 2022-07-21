@@ -57,6 +57,18 @@ Flashloan Bot Arbitrage Finder
         yarn one-finder weth * *
         yarn one-finder * weth *
         ```
+- Trade for Dodo Exchage API
+    * trader bot bot
+        ```
+        yarn dodo-trader dai weth
+        ```
+    * finder bot
+        ```
+        yarn dodo-finder * weth
+        yarn dodo-finder weth usdt *
+        yarn dodo-finder weth * *
+        yarn dodo-finder * weth *
+        ```
 
 
 # Developer Instructions - Flashloan

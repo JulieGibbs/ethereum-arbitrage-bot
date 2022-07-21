@@ -2,84 +2,16 @@ import BN from 'bignumber.js';
 import 'colors';
 import inquirer from 'inquirer';
 import { Table } from 'console-table-printer';
-import { web3, account, network, loanFee, fixed } from '../../lib/config';
-import { getPriceOnOracle, getSwapFromDodoApi, getSwapFromZeroXApi, toPrintable } from '../../lib/utils';
+import { network, loanFee, fixed } from '../../lib/config';
+import { getAllowance, getApproveEncode, getPriceOnOracle, getSwapFromDodoApi, toPrintable } from '../../lib/utils';
 // Types
-import { Token } from '../../lib/types';
-import { Contract } from 'web3-eth-contract';
-
-import { getMaxFlashAmount } from '../../lib/uniswap/v3/getCalldata';
-import { flashSwap, getERC20Contract } from '../../lib/contracts';
+import { CallData, Token } from '../../lib/types';
 import TOKEN from '../../config/mainnet.json';
-import { getSwapOnDODOV2 } from '../../lib/dodo/getCalldata';
+import { callFlashSwap, maxInt, printAccountBalance } from '../common';
+import { flashSwap } from '../../lib/contracts';
 
-let maxInputAmount: BN;
 const tokens: Token[] = [];
-const tokenContract: Contract[] = [];
-/**
- * Print balance of wallet.
- */
-const printAccountBalance = async () => {
-    const table = new Table();
-    const row = { 'Token': 'Balance' };
-
-    let ethBalance = await web3.eth.getBalance(account.address);
-    row['ETH'] = toPrintable(new BN(ethBalance), 18, fixed);
-
-    let promises = tokens.map((t, i) => tokenContract[i].methods.balanceOf(account.address).call());
-    let balances: string[] = await Promise.all(promises);
-    balances.forEach((bal, i) => {
-        row[tokens[i].symbol] = toPrintable(new BN(bal), tokens[i].decimals, fixed);
-    });
-    table.addRow(row);
-    table.printTable();
-    maxInputAmount = await getMaxFlashAmount(tokenContract[0]);
-    if (maxInputAmount !== undefined)
-        console.log(`Max flash loan amount of ${tokens[0].symbol} is ${toPrintable(maxInputAmount, tokens[0].decimals, fixed)}`)
-    console.log('-------------------------------------------------------------------------------------------------------------------');
-}
-
-/**
- * Swap tokens on contract.
- * @param loanToken Address of token to loan.
- * @param loanAmount Loan amount of token.
- * @param tradePath Array of address to trade.
- * @param dexPath Array of dex index.
- */
-const callFlashSwap = async (loanToken: string, loanAmount: BN, tokenPath: string[], spenders: string[], routers: string[], tradeDatas: string[]) => {
-    console.log('Swapping ...');
-    if (tokenPath.length != routers.length || tokenPath.length != tradeDatas.length) {
-        console.log('Swap data is not correct!')
-        return {};
-    }
-    const loanTokens = loanToken === TOKEN.WETH.address ? [TOKEN.DAI.address, loanToken] : [loanToken, TOKEN.WETH.address];
-    const loanAmounts = loanToken === TOKEN.WETH.address ? ['0', loanAmount.toFixed()] : [loanAmount.toFixed(), '0']
-    const init = flashSwap.methods.initUniFlashSwap(
-        loanTokens,
-        loanAmounts,
-        tokenPath,
-        spenders,
-        routers,
-        tradeDatas
-    );
-    const nonce = await web3.eth.getTransactionCount(account.address);
-    const tx = {
-        from: account.address,
-        to: flashSwap.options.address,
-        nonce: nonce,
-        gas: 2000000,
-        data: init.encodeABI()
-    };
-    const signedTx = await account.signTransaction(tx);
-
-    try {
-        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
-        console.log(`Transaction hash: https://etherscan.io/tx/${receipt.transactionHash}`);
-    }
-    catch (err) {
-        console.log(err);
-    }
-}
+let maxBalance: string;
 
 /**
  * Initialize token contracts.
@@ -89,12 +21,8 @@ const initTokenContract = async () => {
     console.log('-------------------------------------------------------------------------------------------------------------------');
     console.log(`Bot is running on ${network.yellow}. Initializing...`);
     console.log();
-    // Initialize token contracts and decimals.
-    tokens.forEach((_token) => {
-        tokenContract.push(getERC20Contract(_token.address));
-    });
-
-    await printAccountBalance();
+    
+    maxBalance = await printAccountBalance(tokens);
 }
 
 /**
@@ -104,10 +32,7 @@ const initTokenContract = async () => {
  */
 const runBot = async (inputAmount: BN) => {
     const table = new Table();
-    const tokenPath: string[] = tokens.map(_token => _token.address);
-    const spenders: string[] = [];
-    const routers: string[] = [];
-    const tradeDatas: string[] = [];
+    const tradeDatas: CallData[] = [];
     const amountOut: BN[] = [];
     amountOut.push(inputAmount);
     const [a, b] = new BN(loanFee).toFraction();
@@ -125,12 +50,11 @@ const runBot = async (inputAmount: BN) => {
         // gas = new BN(res.gas).times(new BN(res.gasPrice));
         amountOut[i + 1] = new BN(res.data.resAmount).times(new BN(10).pow(tokens[next].decimals));
         let dexName = res.data.useSource;
-        spenders.push(res.data.targetApproveAddr);
-        routers.push(res.data.to);
-        tradeDatas.push(res.data.data);
-        let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
+        if (amountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, res.data.targetApproveAddr)))
+            tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], res.data.targetApproveAddr, maxInt)]);
+        tradeDatas.push([res.data.to, res.data.data]);
         let amountInPrint = toPrintable(amountOut[i], tokens[i].decimals, fixed);
-
+        let toAmountPrint = toPrintable(amountOut[i + 1], tokens[next].decimals, fixed);
         table.addRow({
             'Input Token': `${amountInPrint} ${tokens[i].symbol}`,
             [dexName]: `${toAmountPrint} ${tokens[next].symbol}`
@@ -139,30 +63,16 @@ const runBot = async (inputAmount: BN) => {
     }
  
     table.printTable();
-
-    let res = tokens[0].symbol != TOKEN.DAI.symbol ? await getSwapFromDodoApi(
-        inputAmount,
-        tokens[0],
-        TOKEN.DAI,
-        network
-    ) : null;
-    const price = tokens[0].symbol != TOKEN.DAI.symbol ? new BN(res.data.resPricePerFromToken) : new BN(1);
-    const profit = amountOut[tokenPath.length].minus(inputAmount).minus(feeAmount);
-    const profitUSD = profit.times(price); 
+    console.log(tradeDatas);
+    const price = await getPriceOnOracle(tokens[0]);
+    const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
+    const profitUSD = profit.times(price);
+    const profitPrint = toPrintable(profit, tokens[0].decimals, fixed);
+    const profitUSDPrint = toPrintable(profitUSD, tokens[0].decimals + 8, fixed);
     console.log(
-        'Input:',
-        toPrintable(inputAmount, tokens[0].decimals, fixed),
-        tokens[0].symbol,
-        '\tEstimate profit:',
-        profit.gt(0) ?
-            profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-            profit.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        tokens[0].symbol,
-        '($',
-            profitUSD.gt(0) ?
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).green :
-                profitUSD.div(new BN(10).pow(tokens[0].decimals)).toFixed(fixed).red,
-        ')'
+        'Input:', toPrintable(inputAmount, tokens[0].decimals, fixed), tokens[0].symbol,
+        '\tEstimate profit:', profit.gt(0) ? profitPrint.green : profitPrint.red, tokens[0].symbol,
+        '($', profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red, ')'
     );
     if (profit.gt(0)) {
         let response = await inquirer.prompt([{
@@ -170,14 +80,15 @@ const runBot = async (inputAmount: BN) => {
             name: 'isExe',
             message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokenPath[0], inputAmount, tokenPath, spenders, routers, tradeDatas);
+        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas, flashSwap);
     }
+    console.log();
 }
 
 /**
  * Bot start here.
  */
-const main = async () => {
+ const main = async () => {
     let args = process.argv.slice(2);
     if (args.length < 2) {
         console.log('Please input at least two token.');
@@ -201,7 +112,7 @@ const main = async () => {
         }]);
         let input = parseFloat(response.input);
         if (isNaN(input) || input <= 0) continue;
-        if (new BN(input).gt(maxInputAmount)) {
+        if (maxBalance == undefined || new BN(input).gt(new BN(maxBalance))) {
             console.log("Input exceed Max Loan Amount!".red);
             continue;
         }

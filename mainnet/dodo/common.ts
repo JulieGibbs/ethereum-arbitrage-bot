@@ -2,7 +2,7 @@ import BN from 'bignumber.js';
 import { Table } from 'console-table-printer';
 import { fixed, loanFee, network, web3 } from '../../lib/config';
 import { Token } from '../../lib/types';
-import { getPriceOnOracle, getSwapFromZeroXApi, stripAnsiCodes, toPrintable } from '../../lib/utils';
+import { getPriceOnOracle, getSwapFromDodoApi, stripAnsiCodes, toPrintable } from '../../lib/utils';
 export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     const blockNumber = await web3.eth.getBlockNumber() + '';
     let tokenPathPrint = tokenPath.map(t => t.symbol).join(' -> ') + ' -> ' + tokenPath[0].symbol;
@@ -22,23 +22,25 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     for (let i = 0; i < tokenPath.length; i++) {
         let next = (i + 1) % tokenPath.length;
         if (!amountOut[i].isFinite()) return{};
-        let res = await getSwapFromZeroXApi(
+        let res = await getSwapFromDodoApi(
             amountOut[i],
             tokenPath[i],
             tokenPath[next],
             network
         );
+
         if (res === null) return {};
-        gas += parseInt(res.gas);
-        amountOut[i + 1] = new BN(res.buyAmount);
-        let dexName = res.orders[0].source;
+        // gas += res.estimatedGas;
+        amountOut[i + 1] = new BN(res.data.resAmount).times(new BN(10).pow(tokenPath[next].decimals));
+        let dexName = res.data.useSource;
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokenPath[next].decimals, fixed);
         table.addRow({
-            'Input Token': `${amountInPrint.yellow} ${tokenPath[i].symbol}`,
-            [dexName]: `${toAmountPrint.yellow} ${tokenPath[next].symbol}`
+            'Input Token': `${amountInPrint} ${tokenPath[i].symbol}`,
+            [dexName]: `${toAmountPrint} ${tokenPath[next].symbol}`
         });
     }
+
     const price = await getPriceOnOracle(tokenPath[0]);
     const profit = amountOut[tokenPath.length].minus(amountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price);
