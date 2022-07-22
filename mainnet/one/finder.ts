@@ -4,10 +4,12 @@ import BN from 'bignumber.js';
 import TOKEN from '../../config/super_short.json';
 import { calculateProfit } from './common';
 import { Token } from '../../lib/types';
+import { init } from '../../lib/config';
 
 
 const run = async (tokenPath: Token[]) => {
-    const initial = new BN(1).times(new BN(10).pow(tokenPath[0].decimals));
+    if (tokenPath[0] == tokenPath[1] || tokenPath[1] == tokenPath[2]) return;
+    const initial = new BN(init).times(new BN(10).pow(tokenPath[0].decimals));
     const { profit, log } = await calculateProfit(initial, tokenPath);
     if (!profit || profit.lte(0)) return;
     

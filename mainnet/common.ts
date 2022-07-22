@@ -55,7 +55,7 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeData
        from: account.address,
        to: flashSwap.options.address,
        nonce: nonce,
-       gasPrice: 20000000000,
+    //    gasPrice: 20000000000,
        gas: 2000000,
        data: data.encodeABI()
    };

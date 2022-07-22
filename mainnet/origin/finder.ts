@@ -2,13 +2,14 @@ import 'colors';
 import fs from 'fs';
 import BN from 'bignumber.js';
 import { Token } from '../../lib/types';
-import TOKEN from '../../config/super_short.json';
+import TOKEN from '../../config/mainnet.json';
 import { calculateProfit } from './common';
-import { network } from '../../lib/config';
+import { init, network } from '../../lib/config';
 
 
 const run = async (tokenPath: Token[]) => {
-    const initial = new BN(1).times(new BN(10).pow(tokenPath[0].decimals));
+    if (tokenPath[0] == tokenPath[1] || tokenPath[1] == tokenPath[2]) return;
+    const initial = new BN(init).times(new BN(10).pow(tokenPath[0].decimals));
     const { profit, log } = await calculateProfit(initial, tokenPath);
     if (!profit || profit.lte(0)) return;
     

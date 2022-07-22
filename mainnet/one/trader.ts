@@ -65,7 +65,7 @@ const initTokenContract = async () => {
     }
     
     table.printTable();
-    console.log(tradeDatas);
+    // console.log(tradeDatas);
     const price = await getPriceOnOracle(tokens[0]);
     const profit = amountOut[tokens.length].minus(amountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price);
