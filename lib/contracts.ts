@@ -14,9 +14,11 @@ import FlashSwap2 from '../abi/Uniswap2Flash.json';
 import FlashSwap3 from '../abi/Uniswap3Flash.json';
 import UniV3Factory from '../abi/UniswapV3Factory.json';
 import UniV2Factory from '../abi/UniswapV2Factory.json';
+import UniV1Factory from '../abi/UniswapV1Factory.json';
 import un3IQuoter from '../abi/UniswapV3IQuoter.json';
 import un3IRouter from '../abi/UniswapV3Router.json';
 import un2IRouter from '../abi/UniswapV2Router02.json';
+import un1IExchange from '../abi/UniV1Exchange.json';
 import lkIRouter from '../abi/LinkSwapRouter.json';
 import mnIFactory from '../abi/MooniFactory.json';
 import mnIRouter from '../abi/MooniSwap.json';
@@ -24,11 +26,13 @@ import bcIQuoter from '../abi/BancorNetworkInfo.json';
 import bcIRouter from '../abi/BancorNetwork.json';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 // export const flashSwap = new web3.eth.Contract(FlashSwap2.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
 export const flashSwap = new web3.eth.Contract(FlashSwap3.abi as AbiItem[], process.env.MAINNET_CONTRACT_ADDRESS);
 export const offchainOracle = new web3.eth.Contract(IOracle.abi as AbiItem[], DEX[network].OneInchOracle.Oracle);
 export const uni3Factory = new web3.eth.Contract(UniV3Factory.abi as AbiItem[], DEX[network].UniswapV3.Factory);
 export const uni2Factory = new web3.eth.Contract(UniV2Factory.abi as AbiItem[], DEX[network].UniswapV2.Factory);
+export const uni1Factory = new web3.eth.Contract(UniV1Factory.abi as AbiItem[], DEX[network].UniswapV1.Factory);
 export const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 export const un3Router = new web3.eth.Contract(un3IRouter.abi as AbiItem[], DEX[network].UniswapV3.Router);
 export const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
@@ -49,3 +53,10 @@ export const getERC20Contract = (token: Token) => {
 }
 export const getChainlinkContract = (token: Token) => Chainlink[token.symbol] ?
     new web3.eth.Contract(IChainLink as AbiItem[], Chainlink[token.symbol]) : null;
+export const getUniV1Exchange = async (token: Token) => {
+    const exchangeAddr = await uni1Factory.methods.getExchange(token.address).call();
+    if (exchangeAddr == ZERO_ADDRESS) {
+        console.log(`Exchange for ${token.symbol} is not exist!`);
+    }
+    return new web3.eth.Contract(un1IExchange.abi as AbiItem[], exchangeAddr);
+}

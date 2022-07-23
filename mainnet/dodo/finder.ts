@@ -1,7 +1,7 @@
 import fs from 'fs';
 import 'colors';
 import BN from 'bignumber.js';
-import TOKEN from '../../config/super_short.json';
+import TOKEN from '../../config/dodo.json';
 import { calculateProfit } from './common';
 import { Token } from '../../lib/types';
 import { init } from '../../lib/config';

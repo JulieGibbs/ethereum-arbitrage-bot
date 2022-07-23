@@ -6,7 +6,7 @@ import { account, fixed, web3 } from '../lib/config';
 import { getERC20Contract } from '../lib/contracts';
 import { getMaxFlashAmount3, getMaxFlashAmount2 } from '../lib/uniswap/v3/getCalldata';
 import { toPrintable } from '../lib/utils';
-
+import TOKEN from '../config/mainnet.json';
 export const maxInt= new BN(2).pow(256).minus(1);
 
 export const printAccountBalance = async (tokens: Token[]) => {
@@ -56,7 +56,7 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeData
        to: flashSwap.options.address,
        nonce: nonce,
     //    gasPrice: 20000000000,
-       gas: 2000000,
+       gas: 1500000,
        data: data.encodeABI()
    };
    const signedTx = await account.signTransaction(tx);
@@ -69,3 +69,33 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeData
        console.log(err);
    }
 }
+export const getFlashSwapGas = async (loanToken: string, loanAmount: BN, tradeDatas: CallData[], flashSwap: Contract) => {
+    const data = flashSwap.methods.initFlashloan(
+        loanToken,
+        loanAmount,
+        tradeDatas
+    );
+    const gasPrice = 20000000000;
+    const nonce = await web3.eth.getTransactionCount(account.address);
+    const tx = {
+        from: account.address,
+        to: flashSwap.options.address,
+        nonce: nonce,
+        gasPrice: gasPrice,
+        gas: 2000000,
+        data: data.encodeABI()
+    };
+    const signedTx = await account.signTransaction(tx);
+ 
+    try {
+        const gas = await web3.eth.estimateGas({
+            ...signedTx,
+            from: process.env.WALLET_ADDRESS
+        });
+        const gasCost = new BN(gasPrice).times(new BN(gas)).div(new BN(10).pow(TOKEN.WETH.decimals));
+        return gasCost.toFixed();
+    }
+    catch (err) {
+        console.log(err);
+    }
+ }

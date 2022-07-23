@@ -7,7 +7,7 @@ import { getAllowance, getApproveEncode, getPriceOnOracle, getSwapFrom1InchApi, 
 // Types
 import { CallData, Token } from '../../lib/types';
 import TOKEN from '../../config/mainnet.json';
-import { callFlashSwap, maxInt, printAccountBalance } from '../common';
+import { callFlashSwap, getFlashSwapGas, maxInt, printAccountBalance } from '../common';
 import { flashSwap } from '../../lib/contracts';
 
 const tokens: Token[] = [];
@@ -74,7 +74,8 @@ const initTokenContract = async () => {
     console.log(
         'Input:', toPrintable(inputAmount, tokens[0].decimals, fixed), tokens[0].symbol,
         '\tEstimate profit:', profit.gt(0) ? profitPrint.green : profitPrint.red, tokens[0].symbol,
-        '($', profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red, ')'
+        '($', profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red, ')',
+        // '\tEstimate gas:', await getFlashSwapGas(tokens[0].address, inputAmount, tradeDatas, flashSwap)
     );
     if (profit.gt(0)) {
         let response = await inquirer.prompt([{

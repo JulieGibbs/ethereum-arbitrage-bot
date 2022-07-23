@@ -11,6 +11,7 @@ import TOKEN from '../../config/mainnet.json';
 import { getAllowance, getApproveEncode, getPriceOnOracle, toPrintable } from '../../lib/utils';
 import { callFlashSwap, maxInt, printAccountBalance } from '../common';
 import { DEX, getAllQuotes } from './common';
+import { getSwapOnUniV1 } from '../../lib/uniswap/v1/getCalldata';
 import { getSwapOnUniV2 } from '../../lib/uniswap/v2/getCalldata';
 import { getSwapOnUniv3 } from '../../lib/uniswap/v3/getCalldata';
 import { getSwapOnMooni } from '../../lib/mooniswap/getCalldata';
@@ -63,7 +64,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[0].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[0].options.address, 
-                getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[0])
+                getSwapOnUniv3(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[0])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][1])) {
@@ -72,7 +73,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[1].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[1].options.address,
-                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[1])
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[1])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][2])) {
@@ -81,7 +82,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[2].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[2].options.address,
-                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[2])
+                await getSwapOnUniV1(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], contracts[2])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
@@ -90,7 +91,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[3].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[3].options.address,
-                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[3])
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[3])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][4])) {
@@ -99,7 +100,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[4].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[4].options.address,
-                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[4])
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[4])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][5])) {
@@ -108,7 +109,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[5].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[5].options.address,
-                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[5])
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[5])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][6])) {
@@ -117,7 +118,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[6].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[6].options.address,
-                getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address, contracts[6])
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[6])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][7])) {
@@ -126,7 +127,16 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[7].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[7].options.address,
-                getSwapOnBancorV3(maxAmountOut[i], maxAmountOut[i + 1], [tokens[i].address, tokens[next].address], flashSwap.options.address)
+                getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[7])
+            ]);
+        }
+        else if (maxAmountOut[i + 1].eq(amountOut[i][8])) {
+            dexName = DEX[8];
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[8].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[8].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[8].options.address,
+                getSwapOnBancorV3(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[8])
             ]);
         }
         table.addRow({
