@@ -413,7 +413,7 @@
         "symbol": "SUPER",
         "decimals": 18
     },
-    "sUSD": {
+    "SUSD": {
         "name": "Synth sUSD",
         "address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
         "symbol": "sUSD",

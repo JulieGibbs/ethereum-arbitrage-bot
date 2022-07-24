@@ -82,7 +82,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[2].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[2].options.address,
-                await getSwapOnUniV1(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], contracts[2])
+                await getSwapOnUniV1(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[2])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
@@ -144,7 +144,7 @@ const runBot = async (inputAmount: BN) => {
             [dexName]: `${maxAmountPrint} ${tokens[next].symbol}`
         });
     }
-    // console.log(tradeDatas);
+    console.log(tradeDatas);
     const price = await getPriceOnOracle(tokens[0]);
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price);
@@ -163,9 +163,9 @@ const runBot = async (inputAmount: BN) => {
         let response = await inquirer.prompt([{
             type: 'input',
             name: 'isExe',
-            message: `Are you sure execute this trade? (yes/no)`
+            message: `Are you sure execute this trade? (y/n)`
         }]);
-        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas, flashSwap);
+        response.isExe === 'y' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas, flashSwap);
     }
 
 }

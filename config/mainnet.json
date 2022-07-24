@@ -857,7 +857,7 @@
         "symbol": "SUPER",
         "decimals": 18
     },
-    "sUSD": {
+    "SUSD": {
         "name": "Synth sUSD",
         "address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
         "symbol": "sUSD",
@@ -993,6 +993,12 @@
         "address": "0xa1d0E215a23d7030842FC67cE582a6aFa3CCaB83",
         "name": "DFI money",
         "symbol": "YFII",
+        "decimals": 18
+    },
+    "ZDEX": {
+        "name": "Zeedex",
+        "address": "0x5150956e082c748ca837a5dfa0a7c10ca4697f9c",
+        "symbol": "ZDEX",
         "decimals": 18
     },
     "ZRX": {

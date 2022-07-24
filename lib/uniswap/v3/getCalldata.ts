@@ -1,4 +1,5 @@
 import BN from 'bignumber.js';
+import 'colors';
 import { Contract } from 'web3-eth-contract';
 import { swapFee, deadline, loanFee } from '../../config';
 import { uni3Factory, uni2Factory } from '../../contracts'; 
@@ -13,7 +14,7 @@ export const getPriceOnUniV3 = (amountIn: BN, tokenIn: Token, tokenOut: Token, q
 
 export const getMaxFlashAmount3 = async (tokenIn: Contract) => {
     let otherToken = tokenIn.options.address === TOKEN.WETH.address ? TOKEN.DAI.address : TOKEN.WETH.address;
-    console.log(loanFee * 1e6);
+    // console.log(loanFee * 1e6);
     // console.log(flashFactory.options.address);
     try {
         const flashPool = await uni3Factory.methods.getPool(tokenIn.options.address, otherToken, loanFee * 1e6).call();

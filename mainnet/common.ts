@@ -55,7 +55,7 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeData
        from: account.address,
        to: flashSwap.options.address,
        nonce: nonce,
-    //    gasPrice: 20000000000,
+       gasPrice: 20000000000,
        gas: 1500000,
        data: data.encodeABI()
    };
@@ -66,7 +66,7 @@ export const callFlashSwap = async (loanToken: string, loanAmount: BN, tradeData
        console.log(`Transaction hash: https://etherscan.io/tx/${receipt.transactionHash}`);
    }
    catch (err) {
-       console.log(err);
+       console.log(err.message);
    }
 }
 export const getFlashSwapGas = async (loanToken: string, loanAmount: BN, tradeDatas: CallData[], flashSwap: Contract) => {

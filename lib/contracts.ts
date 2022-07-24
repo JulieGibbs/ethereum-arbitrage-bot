@@ -55,8 +55,5 @@ export const getChainlinkContract = (token: Token) => Chainlink[token.symbol] ?
     new web3.eth.Contract(IChainLink as AbiItem[], Chainlink[token.symbol]) : null;
 export const getUniV1Exchange = async (token: Token) => {
     const exchangeAddr = await uni1Factory.methods.getExchange(token.address).call();
-    if (exchangeAddr == ZERO_ADDRESS) {
-        console.log(`Exchange for ${token.symbol} is not exist!`);
-    }
     return new web3.eth.Contract(un1IExchange.abi as AbiItem[], exchangeAddr);
 }
