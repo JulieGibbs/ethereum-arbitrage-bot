@@ -48,7 +48,7 @@ const initTokenContract = async () => {
             flashSwap.options.address
         );
         if (res === null) return {};
-        gas = new BN(res.tx.gas).times(res.tx.gasPrice);
+        gas = gas.plus(new BN(res.tx.gas).times(res.tx.gasPrice));
         amountOut[i + 1] = new BN(res.toTokenAmount);
         let dexName = res.protocols[0][0][0].name;
         if (amountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, res.tx.to)))

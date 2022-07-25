@@ -3,7 +3,7 @@ import { Contract } from 'web3-eth-contract';
 import { deadline } from '../../config';
 import { getUniV1Exchange } from '../../contracts';
 import { Token } from '../../types';
-export const getPriceOnUniV1 = async (amountIn: BN, tokenIn: Token, tokenOut: Token): Promise<[Contract, Contract, BN]> => {
+export const getPriceOnUniV1 = async (amountIn: BN, tokenIn: Token, tokenOut: Token): Promise<[Contract, Contract, any]> => {
     const [exchangeA, ethPrice] = await getTokenToEthPrice(amountIn, tokenIn);
     const [exchangeB, tokenPrice] = await getEthToTokenPrice(ethPrice, tokenOut)
     // console.log(exchangeA.options.address);
@@ -20,7 +20,7 @@ export const getTokenToEthPrice = async (amount: BN, token: Token): Promise<[Con
     }
     
 }
-export const getEthToTokenPrice = async (amount: BN, token: Token): Promise<[Contract, BN]> => {
+export const getEthToTokenPrice = async (amount: BN, token: Token): Promise<[Contract, any]> => {
     const exchange = await getUniV1Exchange(token);
     const tokenPrice = await exchange.methods.getEthToTokenInputPrice(amount.toFixed()).encodeABI();
     return [exchange, tokenPrice];

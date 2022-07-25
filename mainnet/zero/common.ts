@@ -12,7 +12,7 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     
     const table = new Table();
     const dexPath: number[] = [];
-    let amountOut: BN[] = [], gas = 0;
+    let amountOut: BN[] = [], gas = new BN(0);
 
     amountOut.push(amountIn);
 
@@ -29,7 +29,7 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
             network
         );
         if (res === null) return {};
-        gas += parseInt(res.gas);
+        gas = gas.plus(new BN(res.gas).times(new BN(res.gasPrice)).plus(new BN(res.value)));
         amountOut[i + 1] = new BN(res.buyAmount);
         let dexName = res.orders[0].source;
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
@@ -44,7 +44,7 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     const profitUSD = profit.times(price);
     const profitPrint = toPrintable(profit, tokenPath[0].decimals, fixed);
     const profitUSDPrint = toPrintable(profitUSD, tokenPath[0].decimals + 8, fixed);
-    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($ ${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red} )\tEstimate gas: ${gas}\n`;
+    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($ ${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red} )\tEstimate gas: ${toPrintable(gas, tokenPath[0].decimals, fixed)}\n`;
     if (profit.isFinite()) {
         table.printTable();
         console.log(profitLog);
