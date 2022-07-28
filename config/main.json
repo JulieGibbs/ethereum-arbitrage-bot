@@ -245,6 +245,12 @@
         "symbol": "TOKE",
         "decimals": 18
     },
+    "TRIBE": {
+        "address": "0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B",
+        "name": "Tribe",
+        "symbol": "TRIBE",
+        "decimals": 18
+    },
     "UNI": {
         "address": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
         "name": "Uniswap",

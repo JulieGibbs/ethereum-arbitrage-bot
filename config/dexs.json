@@ -39,6 +39,10 @@
             "Router": "0xCeB90E4C17d626BE0fACd78b79c9c87d7ca181b3",
             "Factory": "0x9DEB29c9a4c7A88a3C0257393b7f3335338D9A9D"
         },
+        "FraxSwap": {
+            "Router": "0x1C6cA5DEe97C8C368Ca559892CCce2454c8C35C7",
+            "Factory": "0xB076b06F669e682609fb4a8C6646D2619717Be4b"
+        },
         "LinkSwap": {
             "Router": "0xA7eCe0911FE8C60bff9e99f8fAFcDBE56e07afF1"
         },
@@ -48,6 +52,9 @@
         "BancorV3": {
             "Quoter": "0x8E303D296851B320e6a697bAcB979d13c9D6E760",
             "Router": "0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB"
+        },
+        "SmoothySwap": {
+            "Router": "0x965cC658158a7689FBB6C4Df735aA435C500C29B"
         },
         "OneInchOracle": {
             "Oracle": "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb"

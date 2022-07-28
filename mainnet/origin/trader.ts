@@ -127,7 +127,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[7].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[7].options.address,
-                getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[7])
+                getSwapOnUniV2(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[7])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][8])) {
@@ -136,7 +136,16 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[8].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[8].options.address,
-                getSwapOnBancorV3(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[8])
+                getSwapOnMooni(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[8])
+            ]);
+        }
+        else if (maxAmountOut[i + 1].eq(amountOut[i][9])) {
+            dexName = DEX[9];
+            if (maxAmountOut[i].gt(await getAllowance(tokens[i], flashSwap.options.address, contracts[9].options.address)))
+                tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[9].options.address, maxInt)]);
+            tradeDatas.push([
+                contracts[9].options.address,
+                getSwapOnBancorV3(maxAmountOut[i], maxAmountOut[i + 1], tokens[i], tokens[next], flashSwap.options.address, contracts[9])
             ]);
         }
         table.addRow({
@@ -144,7 +153,7 @@ const runBot = async (inputAmount: BN) => {
             [dexName]: `${maxAmountPrint} ${tokens[next].symbol}`
         });
     }
-    console.log(tradeDatas);
+    // console.log(tradeDatas);
     const price = await getPriceOnOracle(tokens[0]);
     const profit = maxAmountOut[tokens.length].minus(maxAmountOut[0]).minus(feeAmount);
     const profitUSD = profit.times(price);

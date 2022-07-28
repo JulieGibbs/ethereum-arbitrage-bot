@@ -24,7 +24,8 @@ import mnIFactory from '../abi/MooniFactory.json';
 import mnIRouter from '../abi/MooniSwap.json';
 import bcIQuoter from '../abi/BancorNetworkInfo.json';
 import bcIRouter from '../abi/BancorNetwork.json';
-
+import fxIRouter from '../abi/FraxSwapRouter.json';
+import smIRouter from '../abi/SmoothySwap.json';
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 // export const flashSwap = new web3.eth.Contract(FlashSwap2.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
@@ -41,9 +42,12 @@ export const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[n
 export const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].Shibaswap.Router);
 export const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
 export const lkRouter = new web3.eth.Contract(lkIRouter.abi as AbiItem[], DEX[network].LinkSwap.Router);
+export const fxRouter = new web3.eth.Contract(fxIRouter.abi as AbiItem[], DEX[network].FraxSwap.Router);
 export const mnFactory = new web3.eth.Contract(mnIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);
 export const bcQuoter = new web3.eth.Contract(bcIQuoter.abi as AbiItem[], DEX[network].BancorV3.Quoter);
 export const bcRouter = new web3.eth.Contract(bcIRouter.abi as AbiItem[], DEX[network].BancorV3.Router);
+export const smRouter = new web3.eth.Contract(smIRouter.abi as AbiItem[], DEX[network].SmoothySwap.Router);
+
 export const getMooniSwapContract = async (tokenIn: Token, tokenOut: Token) => {
     let mooniPool = await mnFactory.methods.pools(tokenIn.address, tokenOut.address).call();
     return new web3.eth.Contract(mnIRouter.abi as AbiItem[], mooniPool);

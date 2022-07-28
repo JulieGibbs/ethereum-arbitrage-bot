@@ -6,6 +6,7 @@ import {
     bcQuoter,
     bcRouter,
     dfRouter, 
+    fxRouter, 
     getMooniSwapContract, 
     getUniV1Exchange, 
     lkRouter, 
@@ -32,6 +33,7 @@ export const DEX = [
     'Shibaswap',
     'Defiswap',
     'Linkswap',
+    'Fraxswap',
     'Mooniswap',
     'Bancor_V3'
 ]
@@ -52,6 +54,7 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     const sh = getPriceOnUniV2(amountIn, tokenIn, tokenOut, shRouter);
     const df = getPriceOnUniV2(amountIn, tokenIn, tokenOut, dfRouter);
     const lk = getPriceOnUniV2(amountIn, tokenIn, tokenOut, lkRouter);
+    const fx = getPriceOnUniV2(amountIn, tokenIn, tokenOut, fxRouter);
     const mn = getPriceOnMooni(amountIn, tokenIn, tokenOut, mnRouter);
     const bc = getPriceOnBancorV3(amountIn, tokenIn, tokenOut, bcQuoter);
     calls.push(
@@ -62,6 +65,7 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
         [lkRouter.options.address, lk],
+        [fxRouter.options.address, fx],
         [mnRouter.options.address, mn],
         [bcQuoter.options.address, bc]
     );
@@ -73,10 +77,11 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     const shQuote = result[4].success && result[4].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
     const dfQuote = result[5].success && result[5].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
     const lkQuote = result[6].success && result[6].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[6].returnData)[1] as any) : new BN(-Infinity);
-    const mnQuote = result[7].success && result[7].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[7].returnData) as any) : new BN(-Infinity);
-    const bcQuote = result[8].success && result[8].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[8].returnData) as any) : new BN(-Infinity);
-    const quotes: BN[] = [uni3Quote, uni2Quote, uni1Quote, suQuote, shQuote, dfQuote, lkQuote, mnQuote, bcQuote];
-    const routers: Contract[] = [un3Router, un2Router, un1Router, suRouter, shRouter, dfRouter, lkRouter, mnRouter, bcRouter];
+    const fxQuote = result[7].success && result[7].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[7].returnData)[1] as any) : new BN(-Infinity);
+    const mnQuote = result[8].success && result[8].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[8].returnData) as any) : new BN(-Infinity);
+    const bcQuote = result[9].success && result[9].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[9].returnData) as any) : new BN(-Infinity);
+    const quotes: BN[] = [uni3Quote, uni2Quote, uni1Quote, suQuote, shQuote, dfQuote, lkQuote, fxQuote, mnQuote, bcQuote];
+    const routers: Contract[] = [un3Router, un2Router, un1Router, suRouter, shRouter, dfRouter, lkRouter, fxRouter, mnRouter, bcRouter];
     
     return [ quotes, routers ];
 }
@@ -121,7 +126,7 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     const profitUSD = profit.times(price);
     const profitPrint = toPrintable(profit, tokenPath[0].decimals, fixed);
     const profitUSDPrint = toPrintable(profitUSD, tokenPath[0].decimals + 8, fixed);
-    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($ ${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red} )\n`;
+    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red})\n`;
     if (profit.isFinite()) {
         table.printTable();
         console.log(profitLog);
