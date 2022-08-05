@@ -911,6 +911,12 @@
         "symbol": "TRU",
         "decimals": 8
     },
+    "TUSD": {
+        "address": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "name": "TrueUSD",
+        "symbol": "TUSD",
+        "decimals": 18
+    },
     "UMA": {
         "name": "UMA Voting Token v1",
         "address": "0x04Fa0d235C4abf4BcF4787aF4CF447DE572eF828",
@@ -940,6 +946,12 @@
         "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         "symbol": "USDC",
         "decimals": 6
+    },
+    "USDP": {
+        "name": "Pax Dollar",
+        "address": "0x8E870D67F660D95d5be530380D0eC0bd388289E1",
+        "symbol": "USDP",
+        "decimals": 18
     },
     "USDT": {
         "name": "Tether USD",
@@ -1005,6 +1017,12 @@
         "name": "0x Protocol Token",
         "address": "0xE41d2489571d322189246DaFA5ebDe1F4699F498",
         "symbol": "ZRX",
+        "decimals": 18
+    },
+    "ETH": {
+        "name": "Ethereum",
+        "address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        "symbol": "ETH",
         "decimals": 18
     }
 }

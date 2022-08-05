@@ -41,6 +41,7 @@ export const un2Router =  new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX
 export const suRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].Sushiswap.Router);
 export const shRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].Shibaswap.Router);
 export const dfRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].DefiSwap.Router);
+export const luRouter = new web3.eth.Contract(un2IRouter.abi as AbiItem[], DEX[network].LuaSwap.Router);
 export const lkRouter = new web3.eth.Contract(lkIRouter.abi as AbiItem[], DEX[network].LinkSwap.Router);
 export const fxRouter = new web3.eth.Contract(fxIRouter.abi as AbiItem[], DEX[network].FraxSwap.Router);
 export const mnFactory = new web3.eth.Contract(mnIFactory.abi as AbiItem[], DEX[network].MooniSwap.Factory);

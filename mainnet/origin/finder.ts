@@ -2,7 +2,7 @@ import 'colors';
 import fs from 'fs';
 import BN from 'bignumber.js';
 import { Token } from '../../lib/types';
-import TOKEN from '../../config/main.json';
+import TOKEN from '../../config/main-short.json';
 import { calculateProfit } from './common';
 import { init, network } from '../../lib/config';
 
@@ -10,7 +10,7 @@ import { init, network } from '../../lib/config';
 const run = async (tokenPath: Token[]) => {
     let initAmmount = init;
     if (tokenPath[0] == tokenPath[1] || tokenPath[1] == tokenPath[2]) return;
-    if (tokenPath[0].symbol != 'WETH') initAmmount = init * 100; 
+    if (tokenPath[0].symbol != 'WETH') initAmmount = init * 10; 
     const initial = new BN(initAmmount).times(new BN(10).pow(tokenPath[0].decimals));
     const { profit, log } = await calculateProfit(initial, tokenPath);
     if (!profit || profit.lte(0)) return;

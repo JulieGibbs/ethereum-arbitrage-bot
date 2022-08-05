@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "one-finder",
+			"problemMatcher": [],
+			"label": "npm: one-finder",
+			"detail": "ts-node mainnet/one/finder"
+		}
+	]
+}

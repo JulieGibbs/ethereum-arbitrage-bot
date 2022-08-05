@@ -46,6 +46,14 @@
         "LinkSwap": {
             "Router": "0xA7eCe0911FE8C60bff9e99f8fAFcDBE56e07afF1"
         },
+        "LuaSwap": {
+            "Router": "0x1d5C6F1607A171Ad52EFB270121331b3039dD83e",
+            "Factory": "0x0388c1e0f210abae597b7de712b9510c6c36c857"
+        },
+        "MiniSwapV2": {
+            "Router": "",
+            "Factory": ""
+        },
         "MooniSwap": {
             "Factory": "0x71CD6666064C3A1354a3B4dca5fA1E2D3ee7D303"
         },
@@ -54,7 +62,7 @@
             "Router": "0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB"
         },
         "SmoothySwap": {
-            "Router": "0x965cC658158a7689FBB6C4Df735aA435C500C29B"
+            "Router": "0xe5859f4EFc09027A9B718781DCb2C6910CAc6E91"
         },
         "OneInchOracle": {
             "Oracle": "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb"

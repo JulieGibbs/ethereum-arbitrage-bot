@@ -281,12 +281,6 @@
         "symbol": "WETH",
         "decimals": 18
     },
-    "XYO": {
-        "address": "0x55296f69f40Ea6d20E478533C15A6B08B654E758",
-        "name": "XYO Network",
-        "symbol": "XYO",
-        "decimals": 18
-    },
     "YFI": {
         "address": "0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e",
         "name": "yearn finance",

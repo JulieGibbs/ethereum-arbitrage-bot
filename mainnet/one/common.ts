@@ -48,7 +48,7 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
     const profitUSD = profit.times(price);
     const profitPrint = toPrintable(profit, tokenPath[0].decimals, fixed);
     const profitUSDPrint = toPrintable(profitUSD, tokenPath[0].decimals + 8, fixed);
-    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red})\tEstimate gas: ${toPrintable(gas, tokenPath[0].decimals, fixed)}\n`;
+    const profitLog = `Input: ${toPrintable(amountIn, tokenPath[0].decimals, fixed)} ${tokenPath[0].symbol}\t\tEstimate profit: ${profit.gt(0) ? profitPrint.green : profitPrint.red} ${tokenPath[0].symbol} ($${profitUSD.gt(0) ? profitUSDPrint.green : profitUSDPrint.red})\tEstimate gas: ${toPrintable(gas, 18, fixed)}\n`;
     if (profit.isFinite()) {
         table.printTable();
         console.log(profitLog);

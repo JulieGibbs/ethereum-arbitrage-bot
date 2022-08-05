@@ -10,8 +10,10 @@ import {
     getMooniSwapContract, 
     getUniV1Exchange, 
     lkRouter, 
+    luRouter, 
     multicall, 
     shRouter, 
+    smRouter, 
     suRouter, 
     un2Router, 
     un3Quoter, 
@@ -24,6 +26,7 @@ import { getPriceOnOracle, stripAnsiCodes, toPrintable } from '../../lib/utils';
 import { getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 import { getPriceOnBancorV3 } from '../../lib/bancor/getCalldata';
 import { getPriceOnUniV1 } from '../../lib/uniswap/v1/getCalldata';
+import { getPriceOnSmoothy } from '../../lib/smoothy/getCalldata';
 
 export const DEX = [
     'Uniswap_V3',
@@ -35,7 +38,9 @@ export const DEX = [
     'Linkswap',
     'Fraxswap',
     'Mooniswap',
-    'Bancor_V3'
+    'Bancor_V3',
+    'Smoothy',
+    'Luaswap'
 ]
 /**
  * Calculate dexes quote.
@@ -57,6 +62,8 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     const fx = getPriceOnUniV2(amountIn, tokenIn, tokenOut, fxRouter);
     const mn = getPriceOnMooni(amountIn, tokenIn, tokenOut, mnRouter);
     const bc = getPriceOnBancorV3(amountIn, tokenIn, tokenOut, bcQuoter);
+    const sm = getPriceOnSmoothy(amountIn, tokenIn, tokenOut, smRouter);
+    const lu = getPriceOnUniV2(amountIn, tokenIn, tokenOut, luRouter);
     calls.push(
         [un3Quoter.options.address, uni3],
         [un2Router.options.address, uni2],
@@ -67,7 +74,9 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
         [lkRouter.options.address, lk],
         [fxRouter.options.address, fx],
         [mnRouter.options.address, mn],
-        [bcQuoter.options.address, bc]
+        [bcQuoter.options.address, bc],
+        [smRouter.options.address, sm],
+        [luRouter.options.address, lu]
     );
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
     const uni3Quote = result[0].success && result[0].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
@@ -80,8 +89,10 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     const fxQuote = result[7].success && result[7].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[7].returnData)[1] as any) : new BN(-Infinity);
     const mnQuote = result[8].success && result[8].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[8].returnData) as any) : new BN(-Infinity);
     const bcQuote = result[9].success && result[9].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[9].returnData) as any) : new BN(-Infinity);
-    const quotes: BN[] = [uni3Quote, uni2Quote, uni1Quote, suQuote, shQuote, dfQuote, lkQuote, fxQuote, mnQuote, bcQuote];
-    const routers: Contract[] = [un3Router, un2Router, un1Router, suRouter, shRouter, dfRouter, lkRouter, fxRouter, mnRouter, bcRouter];
+    const smQuote = result[10].success && result[10].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[10].returnData) as any) : new BN(-Infinity);
+    const luQuote = result[11].success && result[11].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[11].returnData)[1] as any) : new BN(-Infinity);
+    const quotes: BN[] = [uni3Quote, uni2Quote, uni1Quote, suQuote, shQuote, dfQuote, lkQuote, fxQuote, mnQuote, bcQuote, smQuote, luQuote];
+    const routers: Contract[] = [un3Router, un2Router, un1Router, suRouter, shRouter, dfRouter, lkRouter, fxRouter, mnRouter, bcRouter, smRouter, luRouter];
     
     return [ quotes, routers ];
 }
