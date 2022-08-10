@@ -19,17 +19,6 @@ export const getApproveEncode = (token: Token, spender: string, amount: BN) => {
     const erc20 = getERC20Contract(token);
     return erc20.methods.approve(spender, amount.toFixed()).encodeABI();
 }
-export const getDodoVMQuote = async (amountIn: BN, tokenIn: string, tokenOut: string, quoter: Contract, account: string) => {
-    try {
-        let [amountOut,] = await quoter.methods.querySellBase(account, amountIn).call();
-        console.log(amountOut);
-
-        return new BN(amountOut);
-    }
-    catch (err) {
-        return new BN(-Infinity);
-    }
-}
 
 /**
  * Get Kyber quote.
