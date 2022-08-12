@@ -91,3 +91,44 @@ ts-node finder2pairshort
 ```
 
 - Added 19th June, 22:20.
+
+
+
+# Add new DEX's
+
+1. (/config/dexs.json)
+Add the DEX name, together with it's Proxy/Router/Quoter/Factory contract address(es) found in the DEX documentation to the /config/dexs.json file.
+
+2. (/abi/NEWDEXNAME.json)
+Get the ABI code from the individual DEXs GitHub repo or contract address on etherscan.io.
+And add it to a /abi/DEXNAME.json file. Depending on the DEX it will be the Router/Factory/Exchange/Quoter json files.
+
+3. (/lib/contracts.ts)
+Create contract instance(constant) with address and ABI for specific DEX in lib/contracts.ts file.
+If contract address is depended on token pair like Mooniswap, create function to get contract instance for specific token pair.
+
+
+4. (/lib/NEWDEXNAME)
+Add the "getCalldata.ts" file under /lib/DEXNAME folder you create if needed.
+Add functions(get calldatas for price and swap) in getCalldata.ts file.
+
+5. (/lib/contracts.ts):
+export a new, shorter name as a constant of the DEX in /lib/contracts, by making the constant a combination of the Router/Quoter/Factory/AbiItem, and anything else that is required.
+
+6. (mainnet/origin/common.ts):
+add the new short name of the router/quoter/dex info in the "import { " section.
+
+Import the "getPriceOnDEXNAME" in the same file as step 6 (around line 25)
+
+As well as adding a new constant export of the DEXs name array to display on screen(around line 35).
+
+Also make sure to add the new DEX with a 2-3 char name as a constant in the "getAllQuotes" section (around line 60).
+
+Modify and add the relevant information/constants in the "const result: Multicall" section.
+"getAllQuotes" function returns array of quotes and contract instances(router).  
+
+7. (mainnet/origin/trader):
+
+import "getSwapOnDEXNAME" function for the new dex in the "header".
+
+add the dex to the "const runBot" section as an 'else if' statement by adding it below the rest as a new ID (in order).
