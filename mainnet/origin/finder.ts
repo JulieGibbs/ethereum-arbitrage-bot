@@ -2,7 +2,7 @@ import 'colors';
 import fs from 'fs';
 import BN from 'bignumber.js';
 import { Token } from '../../lib/types';
-import TOKEN from '../../config/main-short.json';
+import TOKEN from '../../config/very_short.json';
 import { calculateProfit } from './common';
 import { init, network } from '../../lib/config';
 
