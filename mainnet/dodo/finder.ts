@@ -9,7 +9,7 @@ import { init } from '../../lib/config';
 
 
 const run = async (tokenPath: Token[]) => {
-    if (tokenPath[0] == tokenPath[1] || tokenPath[1] == tokenPath[2]) return;
+    if (tokenPath[0] == tokenPath[1] || tokenPath[1] == tokenPath[2] || tokenPath[0] == tokenPath[2]) return;
     const initial = new BN(init).times(new BN(10).pow(tokenPath[0].decimals));
     const { profit, log } = await calculateProfit(initial, tokenPath);
     if (!profit || profit.lte(0)) return;

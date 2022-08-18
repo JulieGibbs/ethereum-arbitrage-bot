@@ -24,13 +24,13 @@ import { getPriceOnUniV3 } from '../../lib/uniswap/v3/getCalldata';
 import { getPriceOnOracle, stripAnsiCodes, toPrintable } from '../../lib/utils';
 import { getPriceOnMooni } from '../../lib/mooniswap/getCalldata';
 import { getPriceOnBancorV3 } from '../../lib/bancor/getCalldata';
-import { getPriceOnUniV1 } from '../../lib/uniswap/v1/getCalldata';
+// import { getPriceOnUniV1 } from '../../lib/uniswap/v1/getCalldata';
 import { getPriceOnSmoothy } from '../../lib/smoothy/getCalldata';
 
 export const DEX = [
     'Uniswap_V3',
     'Uniswap_V2',
-    'Uniswap_V1',
+    // 'Uniswap_V1',
     'Sushiswap',
     'Shibaswap',
     'Defiswap',
@@ -51,7 +51,7 @@ export const DEX = [
 export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token): Promise<[BN[], Contract[]]> => {
     const calls = [];
     const mnRouter = await getMooniSwapContract(tokenIn, tokenOut);
-    const [un1Router, un1Quoter, uni1] = await getPriceOnUniV1(amountIn, tokenIn, tokenOut);
+    // const [un1Router, un1Quoter, uni1] = await getPriceOnUniV1(amountIn, tokenIn, tokenOut);
     const uni3 = getPriceOnUniV3(amountIn, tokenIn, tokenOut, un3Quoter);
     const uni2 = getPriceOnUniV2(amountIn, tokenIn, tokenOut, un2Router);
     const su = getPriceOnUniV2(amountIn, tokenIn, tokenOut, suRouter);
@@ -66,7 +66,7 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     calls.push(
         [un3Quoter.options.address, uni3],
         [un2Router.options.address, uni2],
-        [un1Quoter.options.address, uni1],
+        // [un1Quoter.options.address, uni1],
         [suRouter.options.address, su],
         [shRouter.options.address, sh],
         [dfRouter.options.address, df],
@@ -80,18 +80,44 @@ export const getAllQuotes = async (amountIn: BN, tokenIn: Token, tokenOut: Token
     const result: Multicall = await multicall.methods.tryAggregate(false, calls).call();
     const uni3Quote = result[0].success && result[0].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[0].returnData) as any) : new BN(-Infinity);
     const uni2Quote = result[1].success && result[1].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[1].returnData)[1] as any) : new BN(-Infinity);
-    const uni1Quote = result[2].success && result[2].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[2].returnData) as any) : new BN(-Infinity);
-    const suQuote = result[3].success && result[3].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
-    const shQuote = result[4].success && result[4].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
-    const dfQuote = result[5].success && result[5].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
-    const lkQuote = result[6].success && result[6].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[6].returnData)[1] as any) : new BN(-Infinity);
-    const fxQuote = result[7].success && result[7].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[7].returnData)[1] as any) : new BN(-Infinity);
-    const mnQuote = result[8].success && result[8].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[8].returnData) as any) : new BN(-Infinity);
-    const bcQuote = result[9].success && result[9].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[9].returnData) as any) : new BN(-Infinity);
-    const smQuote = result[10].success && result[10].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[10].returnData) as any) : new BN(-Infinity);
-    const luQuote = result[11].success && result[11].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[11].returnData)[1] as any) : new BN(-Infinity);
-    const quotes: BN[] = [uni3Quote, uni2Quote, uni1Quote, suQuote, shQuote, dfQuote, lkQuote, fxQuote, mnQuote, bcQuote, smQuote, luQuote];
-    const routers: Contract[] = [un3Router, un2Router, un1Router, suRouter, shRouter, dfRouter, lkRouter, fxRouter, mnRouter, bcRouter, smRouter, luRouter];
+    // const uni1Quote = result[2].success && result[2].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[2].returnData) as any) : new BN(-Infinity);
+    const suQuote = result[2].success && result[2].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[2].returnData)[1] as any) : new BN(-Infinity);
+    const shQuote = result[3].success && result[3].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[3].returnData)[1] as any) : new BN(-Infinity);
+    const dfQuote = result[4].success && result[4].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[4].returnData)[1] as any) : new BN(-Infinity);
+    const lkQuote = result[5].success && result[5].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[5].returnData)[1] as any) : new BN(-Infinity);
+    const fxQuote = result[6].success && result[6].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[6].returnData)[1] as any) : new BN(-Infinity);
+    const mnQuote = result[7].success && result[7].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[7].returnData) as any) : new BN(-Infinity);
+    const bcQuote = result[8].success && result[8].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[8].returnData) as any) : new BN(-Infinity);
+    const smQuote = result[9].success && result[9].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256', result[9].returnData) as any) : new BN(-Infinity);
+    const luQuote = result[10].success && result[10].returnData != '0x' ? new BN(web3.eth.abi.decodeParameter('uint256[]', result[10].returnData)[1] as any) : new BN(-Infinity);
+    const quotes: BN[] = [
+        uni3Quote, 
+        uni2Quote, 
+        // uni1Quote, 
+        suQuote, 
+        shQuote, 
+        dfQuote, 
+        lkQuote, 
+        fxQuote, 
+        mnQuote, 
+        bcQuote, 
+        smQuote, 
+        luQuote
+    ];
+    const routers: Contract[] = [
+        un3Router, 
+        un2Router, 
+        // un1Router, 
+        suRouter, 
+        shRouter, 
+        dfRouter, 
+        lkRouter, 
+        fxRouter, 
+        mnRouter, 
+        bcRouter, 
+        smRouter, 
+        luRouter
+    ];
     
     return [ quotes, routers ];
 }

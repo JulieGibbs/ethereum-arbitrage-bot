@@ -26,6 +26,12 @@ import bcIQuoter from '../abi/BancorNetworkInfo.json';
 import bcIRouter from '../abi/BancorNetwork.json';
 import fxIRouter from '../abi/FraxSwapRouter.json';
 import smIRouter from '../abi/SmoothySwap.json';
+import ddV1Pool from '../abi/DODOV1.json';
+import ddV2Pool from '../abi/DODOV2.json';
+import ddV2IProxy from '../abi/DODOV2Proxy.json';
+import ddIHelper from '../abi/DODOV1Helper.json'
+import { DODOV1POOLS, DODOV2POOLS } from './dodo/constants';
+
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 // export const flashSwap = new web3.eth.Contract(FlashSwap2.abi as AbiItem[], process.env.FORK_CONTRACT_ADDRESS);
@@ -33,7 +39,7 @@ export const flashSwap = new web3.eth.Contract(FlashSwap3.abi as AbiItem[], proc
 export const offchainOracle = new web3.eth.Contract(IOracle.abi as AbiItem[], DEX[network].OneInchOracle.Oracle);
 export const uni3Factory = new web3.eth.Contract(UniV3Factory.abi as AbiItem[], DEX[network].UniswapV3.Factory);
 export const uni2Factory = new web3.eth.Contract(UniV2Factory.abi as AbiItem[], DEX[network].UniswapV2.Factory);
-export const uni1Factory = new web3.eth.Contract(UniV1Factory.abi as AbiItem[], DEX[network].UniswapV1.Factory);
+// export const uni1Factory = new web3.eth.Contract(UniV1Factory.abi as AbiItem[], DEX[network].UniswapV1.Factory);
 export const un3Quoter = new web3.eth.Contract(un3IQuoter.abi as AbiItem[], DEX[network].UniswapV3.Quoter);
 export const un3Router = new web3.eth.Contract(un3IRouter.abi as AbiItem[], DEX[network].UniswapV3.Router);
 export const multicall = new web3.eth.Contract(IMulticall as AbiItem[], DEX[network].UniswapV3.Multicall2);
@@ -48,6 +54,8 @@ export const mnFactory = new web3.eth.Contract(mnIFactory.abi as AbiItem[], DEX[
 export const bcQuoter = new web3.eth.Contract(bcIQuoter.abi as AbiItem[], DEX[network].BancorV3.Quoter);
 export const bcRouter = new web3.eth.Contract(bcIRouter.abi as AbiItem[], DEX[network].BancorV3.Router);
 export const smRouter = new web3.eth.Contract(smIRouter.abi as AbiItem[], DEX[network].SmoothySwap.Router);
+export const ddV1Helper = new web3.eth.Contract(ddIHelper.abi as AbiItem[], DEX[network].DodoV1.Helper);
+export const ddV2Proxy = new web3.eth.Contract(ddV2IProxy.abi as AbiItem[], DEX[network].DodoV2.Proxy);
 
 export const getMooniSwapContract = async (tokenIn: Token, tokenOut: Token) => {
     let mooniPool = await mnFactory.methods.pools(tokenIn.address, tokenOut.address).call();
@@ -58,7 +66,27 @@ export const getERC20Contract = (token: Token) => {
 }
 export const getChainlinkContract = (token: Token) => Chainlink[token.symbol] ?
     new web3.eth.Contract(IChainLink as AbiItem[], Chainlink[token.symbol]) : null;
-export const getUniV1Exchange = async (token: Token) => {
-    const exchangeAddr = await uni1Factory.methods.getExchange(token.address).call();
-    return new web3.eth.Contract(un1IExchange.abi as AbiItem[], exchangeAddr);
-}
+// export const getUniV1Exchange = async (token: Token) => {
+//     const exchangeAddr = await uni1Factory.methods.getExchange(token.address).call();
+//     return new web3.eth.Contract(un1IExchange.abi as AbiItem[], exchangeAddr);
+// }
+export const getDODOV1Pool = (tokenIn: Token, tokenOut: Token) => {
+    const pair = [tokenIn.address, tokenOut.address].sort();
+  
+    for (const pool of DODOV1POOLS) {
+        if (pool.address.join() === pair.join()) {
+            return new web3.eth.Contract(ddV1Pool.abi as AbiItem[], pool.address[0]);
+        }
+    }
+    throw new Error(`Could not find pool for ${pair.join()}`);
+};
+export const getDODOV2Pool = (tokenIn: Token, tokenOut: Token) => {
+    const pair = [tokenIn.address, tokenOut.address].sort();
+  
+    for (const pool of DODOV2POOLS) {
+        if (pool.address.join() === pair.join()) {
+            return new web3.eth.Contract(ddV2Pool.abi as AbiItem[], pool.address[0]);
+        }
+    }
+    throw new Error(`Could not find pool for ${pair.join()}`);
+};

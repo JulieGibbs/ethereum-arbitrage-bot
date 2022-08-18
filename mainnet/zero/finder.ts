@@ -10,7 +10,7 @@ import { init } from '../../lib/config';
 
 const run = async (tokenPath: Token[]) => {
     let initAmmount = init;
-    if (tokenPath[0] == tokenPath[1] || tokenPath[1] == tokenPath[2]) return;
+    if (tokenPath[0] == tokenPath[1] || tokenPath[1] == tokenPath[2] || tokenPath[0] == tokenPath[2]) return;
     if (tokenPath[0].symbol != 'WETH') initAmmount = init * 10; 
     const initial = new BN(initAmmount).times(new BN(10).pow(tokenPath[0].decimals));
     const { profit, log } = await calculateProfit(initial, tokenPath);

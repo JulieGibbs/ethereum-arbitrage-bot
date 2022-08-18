@@ -3,7 +3,7 @@ import Web3 from 'web3';
 import { Network } from './types';
 import { RPC_URL } from './rpcURLs';
 
-export const init = 10;
+export const init = 5;
 export const deadline = 600;
 export const loanFee = 0.0005;
 export const swapFee = 3000;

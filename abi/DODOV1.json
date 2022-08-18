@@ -1,0 +1,41 @@
+{
+  "contractName": "DODOV1",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "_BASE_TOKEN_",
+      "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "_QUOTE_TOKEN_",
+      "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "amount", "type": "uint256" }
+      ],
+      "name": "queryBuyBaseToken",
+      "outputs": [
+        { "internalType": "uint256", "name": "payQuote", "type": "uint256" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "amount", "type": "uint256" }
+      ],
+      "name": "querySellBaseToken",
+      "outputs": [
+        { "internalType": "uint256", "name": "receiveQuote", "type": "uint256" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]
+}
