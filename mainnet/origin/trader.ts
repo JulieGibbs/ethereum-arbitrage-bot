@@ -83,7 +83,7 @@ const runBot = async (inputAmount: BN) => {
                 tradeDatas.push([tokens[i].address, getApproveEncode(tokens[i], contracts[2].options.address, maxInt)]);
             tradeDatas.push([
                 contracts[2].options.address,
-                await getSwapOnUniV2(maxAmountOut[i], amountMin, tokens[i], tokens[next], flashSwap.options.address, contracts[2])
+                getSwapOnUniV2(maxAmountOut[i], amountMin, tokens[i], tokens[next], flashSwap.options.address, contracts[2])
             ]);
         }
         else if (maxAmountOut[i + 1].eq(amountOut[i][3])) {
