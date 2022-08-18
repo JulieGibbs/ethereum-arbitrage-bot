@@ -191,9 +191,9 @@ const runBot = async (inputAmount: BN) => {
         let response = await inquirer.prompt([{
             type: 'input',
             name: 'isExe',
-            message: `Are you sure execute this trade? (y/n)`
+            message: `Are you sure execute this trade? (yes/no)`
         }]);
-        response.isExe === 'y' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas, flashSwap);
+        response.isExe === 'yes' && await callFlashSwap(tokens[0].address, inputAmount, tradeDatas, flashSwap);
     }
 
 }
