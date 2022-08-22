@@ -39,7 +39,7 @@ export const getMaxFlashAmount2 = async (tokenIn: Contract) => {
     }
 };
 
-export const getSwapOnUniv3 = (amountIn: BN, amountOutMin: BN, tokenIn: Token, tokenOut: Token, recipient: string, router: Contract) => {
+export const getSwapOnUniV3 = (amountIn: BN, amountOutMin: BN, tokenIn: Token, tokenOut: Token, recipient: string, router: Contract) => {
     const param = {
         tokenIn: tokenIn.address,
         tokenOut: tokenOut.address,

@@ -34,7 +34,7 @@ export const calculateProfit = async (amountIn: BN, tokenPath: Token[]) => {
         if (res === null) return {};
         gas = gas.plus(new BN(res.tx.gas).times(new BN(res.tx.gasPrice)).plus(new BN(res.tx.value)));
         amountOut[i + 1] = new BN(res.toTokenAmount);
-        let dexName = res.protocols[0][0][0].name;
+        let dexName = res.protocols[0][0].map(item => item.name).join();
         let amountInPrint = toPrintable(amountOut[i], tokenPath[i].decimals, fixed);
         let toAmountPrint = toPrintable(amountOut[i + 1], tokenPath[next].decimals, fixed);
         table.addRow({

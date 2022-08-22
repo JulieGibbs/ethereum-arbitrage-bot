@@ -29,12 +29,19 @@
         },
         "DodoV2": {
             "Proxy": "0xa356867fDCEa8e71AEaF87805808803806231FdC",
-            "Approve": "0xCB859eA579b28e02B87A1FDE08d087ab9dbE5149"
+            "Approve": "0xCB859eA579b28e02B87A1FDE08d087ab9dbE5149",
+            "DVM": "0x72d220cE168C4f361dD4deE5D826a01AD8598f6C",
+            "DSP": "0x6fdDB76c93299D985f4d3FC7ac468F9A168577A4",
+            "DPP": "0x5336edE8F971339F6c0e304c66ba16F1296A2Fbe",
+            "DCP": "0xE8C9A78725D0451FA19878D5f8A3dC0D55FECF25"
         },
         "DodoV1": {
             "Helper": "0x533dA777aeDCE766CEAe696bf90f8541A4bA80Eb"
         },
-        "Balancer": {
+        "BalancerV1": {
+            "Proxy": "0x3E66B66Fd1d0b02fDa6C811Da9E0547970DB2f21"
+        },
+        "BalancerV2": {
             "Vault": "0xBA12222222228d8Ba445958a75a0704d566BF2C8"
         },
         "DefiSwap": {

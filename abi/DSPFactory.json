@@ -1,0 +1,38 @@
+{
+  "contractName": "DSPFactory",
+  "abi": [
+    {
+      "inputs": [
+        { "internalType": "address", "name": "baseToken", "type": "address" },
+        { "internalType": "address", "name": "quoteToken", "type": "address" }
+      ],
+      "name": "getDODOPool",
+      "outputs": [
+        { "internalType": "address[]", "name": "machines", "type": "address[]" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "token0", "type": "address" },
+        { "internalType": "address", "name": "token1", "type": "address" }
+      ],
+      "name": "getDODOPoolBidirection",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "baseToken0Machines",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "baseToken1Machines",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]
+}

@@ -1,6 +1,3 @@
-import TOKEN from '../../config/mainnet.json';
-export const flashloanAddress = '0x33d8d437796bd43bdccc6740c585f4a15d1070b7';
-
 export const DODOV1POOLS = [
     {
       pair: ["WETH", "USDC"],

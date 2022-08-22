@@ -11,7 +11,9 @@
     "one-finder": "ts-node mainnet/one/finder",
     "one-trader": "ts-node mainnet/one/trader",
     "zero-finder": "ts-node mainnet/zero/finder",
-    "zero-trader": "ts-node mainnet/zero/trader"
+    "zero-trader": "ts-node mainnet/zero/trader",
+    "main3-finder": "ts-node mainnet/trangle/finder",
+    "main3-trader": "ts-node mainnet/trangle/trader"
   },
   "keywords": [
     "arbitrage",

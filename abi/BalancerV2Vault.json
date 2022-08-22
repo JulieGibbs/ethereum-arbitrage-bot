@@ -1,5 +1,5 @@
 {
-  "contractName": "Vault",
+  "contractName": "BalancerVault",
   "abi": [
         {
         "inputs": [

@@ -1,4 +1,10 @@
 {
+    "1INCH": {
+        "address": "0x111111111117dC0aa78b770fA6A738034120C302",
+        "name": "1inch",
+        "symbol": "1INCH",
+        "decimals": 18
+    },
     "AAVE": {
         "address": "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9",
         "name": "Aave",
@@ -100,6 +106,12 @@
         "address": "0x6810e776880C02933D47DB1b9fc05908e5386b96",
         "symbol": "GNO",
         "decimals": 18
+    },
+    "GUSD": {
+        "address": "0x056Fd409E1d7A124BD7017459dFEa2F387b6d5Cd",
+        "name": "Gemini Dollar",
+        "symbol": "GUSD",
+        "decimals": 2
     },
     "IMX": {
         "address": "0xF57e7e7C23978C3cAEC3C3548E3D615c346e79fF",

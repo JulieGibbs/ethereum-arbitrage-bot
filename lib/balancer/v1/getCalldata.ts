@@ -1,7 +1,7 @@
 import BN from 'bignumber.js';
 import { Contract } from 'web3-eth-contract';
-import { deadline } from '../config';
-import { Token } from '../types';
+import { deadline } from '../../config';
+import { Token } from '../../types';
 /**
  * Get Balancer quote.
  * @param amountIn Input amount of token.
@@ -10,7 +10,7 @@ import { Token } from '../types';
  * @param quoter Quoter contract.
  * @returns Output amount of token.
  */
-export const getPriceOnBalancer = (amountIn: BN, tokenIn: Token, tokenOut: Token, quoter: Contract) => {
+export const getPriceOnBalancerV1 = (amountIn: BN, tokenIn: Token, tokenOut: Token, quoter: Contract) => {
     const pool_WETH_USDC = "0x3a19030ed746bd1c3f2b0f996ff9479af04c5f0a000200000000000000000004";
     const tokenPath = [tokenIn, tokenOut];
     const swap_steps_struct: any[] = [];
@@ -35,7 +35,7 @@ export const getPriceOnBalancer = (amountIn: BN, tokenIn: Token, tokenOut: Token
     };
 
     try {
-        const quoteOut = await quoter.methods.queryBatchSwap(
+        const quoteOut = quoter.methods.queryBatchSwap(
             0,
             swap_steps_struct,
             tokenPath,
@@ -48,7 +48,7 @@ export const getPriceOnBalancer = (amountIn: BN, tokenIn: Token, tokenOut: Token
     }
 }
 
-export const getSwapOnBalancer = (amountIn: BN, amountOutMin: BN, tokenIn: Token, tokenOut: Token, recipient: string, router: Contract) => {
+export const getSwapOnBalancerV1 = (amountIn: BN, amountOutMin: BN, tokenIn: Token, tokenOut: Token, recipient: string, router: Contract) => {
     const encoded = router.methods.tradeBySourceAmount(
         tokenIn.address,
         tokenOut.address,
